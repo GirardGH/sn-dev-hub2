@@ -1,0 +1,77 @@
+"use server";
+
+import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { revalidatePath } from "next/cache";
+import type { ClientFormValues, Client } from "./client.types";
+
+export async function getClients(): Promise<Client[]> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("*")
+    .order("name");
+  if (error) throw new Error(error.message);
+  return data as Client[];
+}
+
+export async function getClient(id: string): Promise<Client> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (error) throw new Error(error.message);
+  return data as Client;
+}
+
+export async function createClient(values: ClientFormValues): Promise<Client> {
+  const supabase = await createServerSupabaseClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data, error } = await supabase
+    .from("clients")
+    .insert([{
+      user_id: user.id,
+      name: values.name,
+      code: values.code ?? null,
+      description: values.description ?? null,
+      instance_url: values.instance_url || null,
+      environment: values.environment ?? null,
+      status: values.status ?? "active",
+    }])
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  revalidatePath("/clients");
+  return data as Client;
+}
+
+export async function updateClient(id: string, values: ClientFormValues): Promise<Client> {
+  const supabase = await createServerSupabaseClient();
+  const { data, error } = await supabase
+    .from("clients")
+    .update({
+      name: values.name,
+      code: values.code ?? null,
+      description: values.description ?? null,
+      instance_url: values.instance_url || null,
+      environment: values.environment ?? null,
+      status: values.status ?? "active",
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  revalidatePath("/clients");
+  revalidatePath(`/clients/${id}`);
+  return data as Client;
+}
+
+export async function deleteClient(id: string): Promise<void> {
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.from("clients").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  revalidatePath("/clients");
+}
