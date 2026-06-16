@@ -83,6 +83,7 @@ export function StoryListClient({ stories }: Props) {
           const clientId = row.client_id || row.clients?.id;
           if (clientId) router.push(`/clients/${clientId}/stories/${row.id}`);
         }}
+        onNew={() => router.push("/stories/new")}
         onRefresh={() => router.refresh()}
         emptyMessage="No stories yet. Create a client first, then add stories."
       />

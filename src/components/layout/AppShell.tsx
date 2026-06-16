@@ -12,7 +12,7 @@ export function AppShell({ children, userEmail }: AppShellProps) {
       <Sidebar />
       <Header userEmail={userEmail} />
       <main className="ml-56 pt-12 min-h-screen">
-        <div className="p-5">{children}</div>
+        <div className="p-4">{children}</div>
       </main>
     </div>
   );

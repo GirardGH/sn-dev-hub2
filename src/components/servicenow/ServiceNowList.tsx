@@ -87,18 +87,15 @@ export function ServiceNowList<T extends { id: string }>({
 
   const filteredData = useMemo(() => {
     let result = data;
-
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter((row) =>
         Object.values(row).some((v) => String(v ?? "").toLowerCase().includes(q))
       );
     }
-
     if (activeFilters.length > 0) {
       result = result.filter((row) => applyFilter(row, activeFilters));
     }
-
     if (sortKey) {
       result = [...result].sort((a, b) => {
         const aVal = String((a as Record<string, unknown>)[sortKey] ?? "");
@@ -106,25 +103,17 @@ export function ServiceNowList<T extends { id: string }>({
         return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       });
     }
-
     return result;
   }, [data, search, activeFilters, sortKey, sortDir, applyFilter]);
 
   function toggleSort(key: string) {
-    if (sortKey === key) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortKey(key);
-      setSortDir("asc");
-    }
+    if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortKey(key); setSortDir("asc"); }
   }
 
   function toggleSelectAll() {
-    if (selected.size === filteredData.length) {
-      setSelected(new Set());
-    } else {
-      setSelected(new Set(filteredData.map((r) => r.id)));
-    }
+    if (selected.size === filteredData.length) setSelected(new Set());
+    else setSelected(new Set(filteredData.map((r) => r.id)));
   }
 
   function exportCsv() {
@@ -148,17 +137,18 @@ export function ServiceNowList<T extends { id: string }>({
   }
 
   return (
-    <div className="bg-white border border-sn-border rounded shadow-sm">
+    <div className="bg-white border border-sn-border rounded-sm shadow-sm overflow-hidden">
       {/* Header bar */}
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-sn-border">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-sn-border bg-sn-table-header">
         <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-sn-text">{title}</span>
-          <span className="text-xs text-sn-text-muted">
-            ({filteredData.length} of {data.length})
+          <span className="text-[13px] font-semibold text-sn-text">{title}</span>
+          <span className="text-[11px] text-sn-text-muted bg-white border border-sn-border rounded-sm px-1.5 py-0.5 font-medium">
+            {filteredData.length}
+            {filteredData.length !== data.length && ` / ${data.length}`}
           </span>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sn-text-muted" />
@@ -167,7 +157,7 @@ export function ServiceNowList<T extends { id: string }>({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."
-              className="h-7 pl-7 pr-2.5 text-xs bg-white border border-sn-border rounded outline-none focus:border-sn-accent focus:ring-1 focus:ring-sn-accent w-48"
+              className="h-7 pl-7 pr-2.5 text-xs bg-white border border-sn-border rounded-sm outline-none focus:border-sn-accent focus:ring-1 focus:ring-sn-accent/30 w-44 placeholder:text-sn-border-dark"
             />
           </div>
 
@@ -184,10 +174,7 @@ export function ServiceNowList<T extends { id: string }>({
 
           {/* Columns */}
           {onColumnsChange && (
-            <ColumnConfigurator
-              columns={columns}
-              onChange={onColumnsChange}
-            />
+            <ColumnConfigurator columns={columns} onChange={onColumnsChange} />
           )}
 
           {/* Export */}
@@ -229,9 +216,9 @@ export function ServiceNowList<T extends { id: string }>({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-sm">
+        <table className="w-full text-[13px]">
           <thead>
-            <tr className="bg-gray-50 border-b border-sn-border">
+            <tr className="border-b-2 border-sn-border bg-sn-table-header">
               <th className="w-8 px-3 py-2">
                 <Checkbox
                   checked={selected.size === filteredData.length && filteredData.length > 0}
@@ -242,7 +229,7 @@ export function ServiceNowList<T extends { id: string }>({
                 <th
                   key={col.key}
                   className={cn(
-                    "px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide",
+                    "px-3 py-2 text-left text-[11px] font-semibold text-sn-text-muted uppercase tracking-wider",
                     col.sortable !== false && "cursor-pointer hover:text-sn-text select-none"
                   )}
                   onClick={() => col.sortable !== false && toggleSort(col.key)}
@@ -252,12 +239,12 @@ export function ServiceNowList<T extends { id: string }>({
                     {col.sortable !== false &&
                       (sortKey === col.key ? (
                         sortDir === "asc" ? (
-                          <ChevronUp className="w-3 h-3" />
+                          <ChevronUp className="w-3 h-3 text-sn-accent" />
                         ) : (
-                          <ChevronDown className="w-3 h-3" />
+                          <ChevronDown className="w-3 h-3 text-sn-accent" />
                         )
                       ) : (
-                        <ChevronsUpDown className="w-3 h-3 opacity-40" />
+                        <ChevronsUpDown className="w-3 h-3 opacity-30" />
                       ))}
                   </span>
                 </th>
@@ -276,19 +263,20 @@ export function ServiceNowList<T extends { id: string }>({
               <tr>
                 <td
                   colSpan={visibleColumns.length + 1}
-                  className="px-3 py-8 text-center text-sm text-sn-text-muted"
+                  className="px-3 py-8 text-center text-[13px] text-sn-text-muted"
                 >
                   {emptyMessage}
                 </td>
               </tr>
             )}
             {!loading &&
-              filteredData.map((row) => (
+              filteredData.map((row, idx) => (
                 <tr
                   key={row.id}
                   onClick={() => onRowClick?.(row)}
                   className={cn(
                     "border-b border-sn-border last:border-0 transition-colors",
+                    idx % 2 === 1 ? "bg-sn-table-stripe" : "bg-white",
                     onRowClick && "cursor-pointer hover:bg-sn-accent-light"
                   )}
                 >

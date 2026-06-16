@@ -48,21 +48,25 @@ interface Props {
   developments?: Development[];
   clientId?: string;
   client?: Client;
+  allClients?: Client[];
 }
 
-export function StoryFormClient({ story, developments = [], clientId, client }: Props) {
+export function StoryFormClient({ story, developments = [], clientId, client, allClients }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pickedClientId, setPickedClientId] = useState(clientId ?? story?.client_id ?? client?.id ?? "");
   const isNew = !story;
-  const resolvedClientId = clientId ?? story?.client_id ?? client?.id ?? "";
-  const clientName = client?.name ?? story?.clients?.name ?? "";
-  const clientCode = client?.code ?? story?.clients?.code ?? null;
+  const resolvedClientId = pickedClientId || (clientId ?? story?.client_id ?? client?.id ?? "");
+  const pickedClient = allClients?.find((c) => c.id === pickedClientId);
+  const clientName = pickedClient?.name ?? client?.name ?? story?.clients?.name ?? "";
+  const clientCode = pickedClient?.code ?? client?.code ?? story?.clients?.code ?? null;
 
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<StoryFormValues>({
     resolver: zodResolver(storySchema),
@@ -179,6 +183,20 @@ export function StoryFormClient({ story, developments = [], clientId, client }: 
         relatedLists={devRelatedList}
       >
         <FormSection title="Identification">
+          {allClients && (
+            <Select
+              label="Client *"
+              options={[
+                { value: "", label: "— Select a client —" },
+                ...allClients.map((c) => ({ value: c.id, label: c.name + (c.code ? ` (${c.code})` : "") })),
+              ]}
+              value={pickedClientId}
+              onChange={(e) => {
+                setPickedClientId(e.target.value);
+                setValue("client_id", e.target.value);
+              }}
+            />
+          )}
           <Input
             label="Reference"
             placeholder="STORY-001"

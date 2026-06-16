@@ -83,6 +83,7 @@ export function DevelopmentListClient({ developments }: Props) {
         columns={defaultColumns}
         filterFields={filterFields}
         onRowClick={navigateToDev}
+        onNew={() => router.push("/developments/new")}
         onRefresh={() => router.refresh()}
         emptyMessage="No developments yet. Create a story and add developments from there."
       />

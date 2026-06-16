@@ -75,21 +75,22 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
       </Button>
 
       {open && (
-        <div className="absolute top-9 left-0 z-20 bg-white border border-sn-border rounded shadow-lg p-3 w-[640px]">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
+        <div className="absolute top-9 right-0 z-20 bg-white border border-sn-border rounded-sm shadow-lg w-[640px] max-w-[calc(100vw-1rem)] overflow-hidden">
+          <div className="flex items-center justify-between px-3 py-2 bg-sn-table-header border-b border-sn-border">
+            <span className="text-[11px] font-semibold text-sn-text-muted uppercase tracking-widest">
               Filters
             </span>
             <button
               onClick={() => setOpen(false)}
-              className="text-sn-text-muted hover:text-sn-text"
+              className="text-sn-text-muted hover:text-sn-text transition-colors"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           </div>
 
+          <div className="p-3">
           {conditions.length === 0 && (
-            <p className="text-xs text-sn-text-muted py-2">No conditions. Click Add to start filtering.</p>
+            <p className="text-[12px] text-sn-text-muted py-2">No conditions. Click Add to start filtering.</p>
           )}
 
           <div className="flex flex-col gap-2">
@@ -99,7 +100,7 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
 
               return (
                 <div key={cond.id} className="flex items-center gap-2">
-                  <span className="text-xs text-sn-text-muted w-6 text-right flex-shrink-0">
+                  <span className="text-[11px] font-semibold text-sn-text-muted w-10 text-right flex-shrink-0 uppercase tracking-wide">
                     {idx === 0 ? "Where" : "AND"}
                   </span>
                   <Select
@@ -152,7 +153,7 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
             >
               Add condition
             </Button>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5">
               <Button
                 variant="secondary"
                 size="sm"
@@ -167,6 +168,7 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
                 Apply
               </Button>
             </div>
+          </div>
           </div>
         </div>
       )}

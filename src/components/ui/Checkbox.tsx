@@ -19,13 +19,13 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
           type="checkbox"
           id={inputId}
           className={cn(
-            "w-3.5 h-3.5 rounded border-sn-border text-sn-accent accent-sn-accent",
+            "w-3.5 h-3.5 rounded-sm border-sn-border text-sn-accent accent-sn-accent cursor-pointer",
             className
           )}
           {...props}
         />
         {label && (
-          <span className="text-sm text-sn-text group-hover:text-sn-accent transition-colors">
+          <span className="text-[13px] text-sn-text group-hover:text-sn-accent transition-colors">
             {label}
           </span>
         )}

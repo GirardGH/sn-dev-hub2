@@ -49,19 +49,26 @@ interface Props {
   story?: Story;
   clientId?: string;
   storyId?: string;
+  allClients?: Client[];
+  allStories?: Story[];
 }
 
-export function DevelopmentFormClient({ development, client, story, clientId, storyId }: Props) {
+export function DevelopmentFormClient({ development, client, story, clientId, storyId, allClients, allStories }: Props) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [pickedClientId, setPickedClientId] = useState(clientId ?? development?.client_id ?? client?.id ?? "");
+  const [pickedStoryId, setPickedStoryId] = useState(storyId ?? development?.story_id ?? story?.id ?? "");
   const isNew = !development;
 
-  const resolvedClientId = clientId ?? development?.client_id ?? client?.id ?? "";
-  const resolvedStoryId = storyId ?? development?.story_id ?? story?.id ?? "";
-  const clientName = client?.name ?? development?.clients?.name ?? "";
-  const storyTitle = story?.title ?? development?.stories?.title ?? "";
+  const resolvedClientId = pickedClientId || (clientId ?? development?.client_id ?? client?.id ?? "");
+  const resolvedStoryId = pickedStoryId || (storyId ?? development?.story_id ?? story?.id ?? "");
+  const pickedClient = allClients?.find((c) => c.id === pickedClientId);
+  const pickedStory = allStories?.find((s) => s.id === pickedStoryId);
+  const clientName = pickedClient?.name ?? client?.name ?? development?.clients?.name ?? "";
+  const storyTitle = pickedStory?.title ?? story?.title ?? development?.stories?.title ?? "";
+  const filteredStories = allStories?.filter((s) => s.client_id === pickedClientId) ?? [];
 
   const defaultDevType = development?.development_type ?? "business_rule";
   const [selectedType, setSelectedType] = useState(defaultDevType);
@@ -186,10 +193,41 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
         isNew={isNew}
         createdAt={development?.created_at}
         updatedAt={development?.updated_at}
-        backHref={`/clients/${resolvedClientId}/stories/${resolvedStoryId}`}
+        backHref={resolvedClientId && resolvedStoryId ? `/clients/${resolvedClientId}/stories/${resolvedStoryId}` : "/developments"}
       >
         {/* Common fields */}
         <FormSection title="General">
+          {allClients && (
+            <Select
+              label="Client *"
+              options={[
+                { value: "", label: "— Select a client —" },
+                ...allClients.map((c) => ({ value: c.id, label: c.name + (c.code ? ` (${c.code})` : "") })),
+              ]}
+              value={pickedClientId}
+              onChange={(e) => {
+                setPickedClientId(e.target.value);
+                setPickedStoryId("");
+                setValue("client_id", e.target.value);
+                setValue("story_id", "");
+              }}
+            />
+          )}
+          {allStories && (
+            <Select
+              label="Story *"
+              options={[
+                { value: "", label: pickedClientId ? "— Select a story —" : "— Select a client first —" },
+                ...filteredStories.map((s) => ({ value: s.id, label: s.reference ? `${s.reference} – ${s.title}` : s.title })),
+              ]}
+              value={pickedStoryId}
+              onChange={(e) => {
+                setPickedStoryId(e.target.value);
+                setValue("story_id", e.target.value);
+              }}
+              disabled={!pickedClientId}
+            />
+          )}
           <Input
             label="Title *"
             error={errors.title?.message}
