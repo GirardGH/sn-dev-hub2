@@ -1,3 +1,5 @@
+export type { ParsedSummary, ParsedSummaryComponent } from "./xmlAnalysis";
+
 export interface XmlImport {
   id: string;
   user_id: string;
@@ -21,6 +23,10 @@ export interface ParsedComponent {
   config: Record<string, unknown>;
   rawXml: string;
   selected: boolean;
+  /** Determined after DB duplicate check — defaults to "create" */
+  importAction?: "create" | "update" | "skip";
+  /** ID of the existing development if a duplicate was found */
+  existingId?: string | null;
 }
 
 export interface XmlParseResult {

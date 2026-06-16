@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Upload, FileCode2, AlertCircle } from "lucide-react";
@@ -9,7 +9,13 @@ import { Select } from "@/components/ui/Select";
 import { Breadcrumbs } from "@/components/layout/Breadcrumbs";
 import { XmlImportPreview } from "./XmlImportPreview";
 import { parseServiceNowXml } from "./xmlParser";
-import { createXmlImport, createDevelopmentsFromXmlImport } from "./xml.actions";
+import {
+  createXmlImport,
+  createDevelopmentsFromXmlImport,
+  checkExistingDevelopments,
+  updateXmlImportAnalysis,
+} from "./xml.actions";
+import { analyzeParsedComponents } from "./xmlAnalysis";
 import type { Client } from "@/features/clients/client.types";
 import type { Story } from "@/features/stories/story.types";
 import type { XmlParseResult, ParsedComponent } from "./xml.types";
@@ -19,6 +25,18 @@ interface Props {
   stories: Story[];
   defaultClientId?: string;
   defaultStoryId?: string;
+}
+
+function getSysIdFromConfig(config: Record<string, unknown>): string | null {
+  if (typeof config.sys_id === "string" && config.sys_id.length >= 32) {
+    return config.sys_id.toLowerCase();
+  }
+  const updateName = config.update_name;
+  if (typeof updateName === "string") {
+    const match = updateName.match(/([a-f0-9]{32})$/i);
+    if (match) return match[1].toLowerCase();
+  }
+  return null;
 }
 
 export function XmlImportFormClient({ clients, stories, defaultClientId, defaultStoryId }: Props) {
@@ -31,6 +49,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
   const [components, setComponents] = useState<ParsedComponent[]>([]);
   const [importing, setImporting] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
 
   const filteredStories = selectedClientId
     ? stories.filter((s) => s.client_id === selectedClientId)
@@ -45,6 +64,51 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
     { value: "", label: "— Select story —" },
     ...filteredStories.map((s) => ({ value: s.id, label: s.title })),
   ];
+
+  // Duplicate check whenever story/client/parseResult changes
+  useEffect(() => {
+    if (!parseResult || !selectedStoryId || !selectedClientId) {
+      setComponents((prev) =>
+        prev.map((c) => ({ ...c, importAction: "create" as const, existingId: null }))
+      );
+      return;
+    }
+
+    let cancelled = false;
+    setCheckingDuplicates(true);
+
+    checkExistingDevelopments({
+      storyId: selectedStoryId,
+      clientId: selectedClientId,
+      components: parseResult.components.map((c) => ({
+        title: c.title,
+        developmentType: c.developmentType,
+        sysId: getSysIdFromConfig(c.config),
+      })),
+    })
+      .then((results) => {
+        if (cancelled) return;
+        setComponents((prev) =>
+          prev.map((c, i) => ({
+            ...c,
+            importAction: (results[i]?.existingId ? "update" : "create") as
+              | "create"
+              | "update",
+            existingId: results[i]?.existingId ?? null,
+          }))
+        );
+      })
+      .catch(() => {
+        // silent — components keep their current importAction
+      })
+      .finally(() => {
+        if (!cancelled) setCheckingDuplicates(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedStoryId, selectedClientId, parseResult]);
 
   function processFile(file: File) {
     if (!file.name.endsWith(".xml")) {
@@ -85,45 +149,75 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
     }
     if (!parseResult) return;
 
-    const selectedComponents = components.filter((c) => c.selected);
-    if (selectedComponents.length === 0) {
-      toast.error("Sélectionnez au moins un composant à importer.");
+    const activeComponents = components.filter(
+      (c) => c.selected && (c.importAction ?? "create") !== "skip"
+    );
+    if (activeComponents.length === 0) {
+      toast.error("Sélectionnez au moins un composant à importer (hors ignorés).");
       return;
     }
 
     setImporting(true);
     try {
+      const baseSummary = analyzeParsedComponents(
+        parseResult.components,
+        parseResult.errors
+      ) as unknown as Record<string, unknown>;
+
       const xmlImport = await createXmlImport({
         filename: parseResult.filename,
         raw_xml: parseResult.rawXml,
         client_id: selectedClientId,
         story_id: selectedStoryId,
-        parsed_summary: {
-          total: parseResult.components.length,
-          errors: parseResult.errors,
-        },
+        parsed_summary: baseSummary,
       });
 
-      await createDevelopmentsFromXmlImport({
+      const result = await createDevelopmentsFromXmlImport({
         xmlImportId: xmlImport.id,
         storyId: selectedStoryId,
         clientId: selectedClientId,
-        components: components,
+        components,
       });
 
-      toast.success(`${selectedComponents.length} development(s) créé(s) !`);
-      const story = stories.find((s) => s.id === selectedStoryId);
-      if (story) {
-        router.push(`/clients/${selectedClientId}/stories/${selectedStoryId}`);
-      } else {
-        router.push(`/xml-imports/${xmlImport.id}`);
-      }
+      await updateXmlImportAnalysis(xmlImport.id, {
+        ...baseSummary,
+        importResult: result,
+      });
+
+      const parts: string[] = [];
+      if (result.created > 0)
+        parts.push(`${result.created} créé${result.created > 1 ? "s" : ""}`);
+      if (result.updated > 0) parts.push(`${result.updated} mis à jour`);
+      if (result.skipped > 0)
+        parts.push(`${result.skipped} ignoré${result.skipped > 1 ? "s" : ""}`);
+      toast.success(parts.join(" · ") || "Import terminé.");
+
+      router.push(`/xml-imports/${xmlImport.id}`);
     } catch (err) {
       toast.error("Erreur lors de l'import : " + String(err));
     } finally {
       setImporting(false);
     }
   }
+
+  const createCount = components.filter(
+    (c) => c.selected && (c.importAction ?? "create") === "create"
+  ).length;
+  const updateCount = components.filter(
+    (c) => c.selected && c.importAction === "update"
+  ).length;
+  const skipCount = components.filter(
+    (c) => c.selected && c.importAction === "skip"
+  ).length;
+  const activeCount = createCount + updateCount;
+
+  const importSummaryLine = [
+    createCount > 0 && `+${createCount} à créer`,
+    updateCount > 0 && `↻${updateCount} à mettre à jour`,
+    skipCount > 0 && `${skipCount} ignoré${skipCount > 1 ? "s" : ""}`,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <div className="max-w-5xl">
@@ -167,10 +261,17 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
           {!parseResult && (
             <div
               className={`border-2 border-dashed rounded-lg p-10 text-center transition-colors cursor-pointer
-                ${dragOver ? "border-sn-accent bg-sn-accent-light" : "border-sn-border hover:border-sn-accent hover:bg-gray-50"}`}
+                ${
+                  dragOver
+                    ? "border-sn-accent bg-sn-accent-light"
+                    : "border-sn-border hover:border-sn-accent hover:bg-gray-50"
+                }`}
               onClick={() => fileRef.current?.click()}
               onDrop={handleDrop}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setDragOver(true);
+              }}
               onDragLeave={() => setDragOver(false)}
             >
               <Upload className="w-8 h-8 mx-auto text-sn-text-muted mb-2" />
@@ -198,7 +299,9 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
               <div>
                 <p className="font-medium text-yellow-800">Avertissements</p>
                 <ul className="mt-1 text-xs text-yellow-700 space-y-0.5">
-                  {parseResult.errors.map((e, i) => <li key={i}>• {e}</li>)}
+                  {parseResult.errors.map((e, i) => (
+                    <li key={i}>• {e}</li>
+                  ))}
                 </ul>
               </div>
             </div>
@@ -211,26 +314,41 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
                 filename={parseResult.filename}
                 components={components}
                 onChange={setComponents}
-                onReset={() => { setParseResult(null); setComponents([]); }}
+                onReset={() => {
+                  setParseResult(null);
+                  setComponents([]);
+                }}
+                clientId={selectedClientId || undefined}
+                storyId={selectedStoryId || undefined}
+                checking={checkingDuplicates}
               />
 
               <div className="flex items-center justify-between pt-2 border-t border-sn-border">
-                <p className="text-xs text-sn-text-muted">
-                  {components.filter((c) => c.selected).length} / {components.length} composant(s) sélectionné(s)
-                </p>
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-xs text-sn-text-muted">
+                    {components.filter((c) => c.selected).length} / {components.length}{" "}
+                    composant(s) sélectionné(s)
+                  </p>
+                  {!checkingDuplicates && importSummaryLine && (
+                    <p className="text-xs text-sn-text-muted">{importSummaryLine}</p>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   <Button
                     variant="secondary"
-                    onClick={() => { setParseResult(null); setComponents([]); }}
+                    onClick={() => {
+                      setParseResult(null);
+                      setComponents([]);
+                    }}
                   >
                     Change file
                   </Button>
                   <Button
                     onClick={handleImport}
                     loading={importing}
-                    disabled={components.filter((c) => c.selected).length === 0}
+                    disabled={activeCount === 0 || checkingDuplicates}
                   >
-                    Create {components.filter((c) => c.selected).length} Development(s)
+                    {checkingDuplicates ? "Vérification…" : `Importer (${activeCount})`}
                   </Button>
                 </div>
               </div>

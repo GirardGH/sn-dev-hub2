@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getXmlImport } from "@/features/xml/xml.actions";
+import { getXmlImport, getDevelopmentsByXmlImport } from "@/features/xml/xml.actions";
 import { XmlImportDetailClient } from "@/features/xml/XmlImportDetail";
 
 interface Props {
@@ -9,8 +9,16 @@ interface Props {
 export default async function XmlImportPage({ params }: Props) {
   const { xmlImportId } = await params;
   try {
-    const xmlImport = await getXmlImport(xmlImportId);
-    return <XmlImportDetailClient xmlImport={xmlImport} />;
+    const [xmlImport, linkedDevelopments] = await Promise.all([
+      getXmlImport(xmlImportId),
+      getDevelopmentsByXmlImport(xmlImportId),
+    ]);
+    return (
+      <XmlImportDetailClient
+        xmlImport={xmlImport}
+        linkedDevelopments={linkedDevelopments}
+      />
+    );
   } catch {
     notFound();
   }

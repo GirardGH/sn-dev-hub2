@@ -2,12 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import { Code2 } from "lucide-react";
+import { toast } from "sonner";
 import { ServiceNowList, type ListColumn } from "@/components/servicenow/ServiceNowList";
 import { StatusBadge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import type { Development } from "./development.types";
 import { DEVELOPMENT_TYPE_MAP, DEVELOPMENT_TYPE_OPTIONS } from "./developmentTypes";
+import { resolveSnLabel } from "@/features/xml/snTableRegistry";
 import type { FilterField } from "@/components/servicenow/FilterBuilder";
+import { deleteDevelopments } from "./development.actions";
 
 type DevelopmentWithRelations = Development & {
   stories?: { id: string; title: string } | null;
@@ -38,7 +41,7 @@ const defaultColumns: ListColumn<DevelopmentWithRelations>[] = [
     </span>
   )},
   { key: "development_type", label: "Type", visible: true, order: 2, render: (row) =>
-    DEVELOPMENT_TYPE_MAP[row.development_type as keyof typeof DEVELOPMENT_TYPE_MAP]?.label ?? row.development_type
+    DEVELOPMENT_TYPE_MAP[row.development_type as keyof typeof DEVELOPMENT_TYPE_MAP]?.label ?? resolveSnLabel(row.development_type)
   },
   { key: "target_table", label: "Table", visible: true, order: 3 },
   { key: "story", label: "Story", visible: true, order: 4, render: (row) =>
@@ -59,6 +62,12 @@ interface Props {
 
 export function DevelopmentListClient({ developments }: Props) {
   const router = useRouter();
+
+  async function handleDeleteSelected(ids: string[]) {
+    await deleteDevelopments(ids);
+    toast.success(`${ids.length} développement${ids.length > 1 ? "s" : ""} supprimé${ids.length > 1 ? "s" : ""}.`);
+    router.refresh();
+  }
 
   function navigateToDev(row: DevelopmentWithRelations) {
     const clientId = row.client_id || row.clients?.id;
@@ -85,6 +94,7 @@ export function DevelopmentListClient({ developments }: Props) {
         onRowClick={navigateToDev}
         onNew={() => router.push("/developments/new")}
         onRefresh={() => router.refresh()}
+        onDeleteSelected={handleDeleteSelected}
         emptyMessage="No developments yet. Create a story and add developments from there."
       />
     </div>

@@ -29,7 +29,10 @@ import {
 import { BusinessRuleFields } from "./fields/BusinessRuleFields";
 import { ScriptIncludeFields } from "./fields/ScriptIncludeFields";
 import { GenericScriptFields } from "./fields/GenericScriptFields";
+import { GenericConfigFields } from "./fields/GenericConfigFields";
 import { WidgetFields } from "./fields/WidgetFields";
+import { CodeEditor } from "@/components/servicenow/CodeEditor";
+import { resolveSnLabel } from "@/features/xml/snTableRegistry";
 import type { Client } from "@/features/clients/client.types";
 import type { Story } from "@/features/stories/story.types";
 
@@ -159,6 +162,10 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
   }
 
   function renderTypeFields() {
+    // Types not in DEVELOPMENT_TYPE_MAP use the fully dynamic generic form
+    if (!getDevTypeConfig(selectedType)) {
+      return <GenericConfigFields config={config} onChange={handleConfigChange} />;
+    }
     switch (selectedType) {
       case "business_rule":
         return <BusinessRuleFields config={config} onChange={handleConfigChange} />;
@@ -171,7 +178,10 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
     }
   }
 
-  const typeLabel = DEVELOPMENT_TYPE_MAP[selectedType as keyof typeof DEVELOPMENT_TYPE_MAP]?.label ?? selectedType;
+  const isKnownDevType = getDevTypeConfig(selectedType) !== null;
+  const typeLabel =
+    DEVELOPMENT_TYPE_MAP[selectedType as keyof typeof DEVELOPMENT_TYPE_MAP]?.label ??
+    resolveSnLabel(selectedType);
 
   return (
     <>
@@ -235,7 +245,15 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
           />
           <Select
             label="Type *"
-            options={DEVELOPMENT_TYPE_OPTIONS}
+            options={[
+              // For XML-imported components whose type isn't in DEVELOPMENT_TYPE_MAP:
+              // show their detected type as a labelled first option so the form stays
+              // consistent. The user can reassign to a known type if they want.
+              ...(!isKnownDevType
+                ? [{ value: selectedType, label: `${resolveSnLabel(selectedType)} — non mappé` }]
+                : []),
+              ...DEVELOPMENT_TYPE_OPTIONS,
+            ]}
             value={selectedType}
             onChange={(e) => handleTypeChange(e.target.value)}
           />
@@ -275,6 +293,19 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
 
         {/* Dynamic type-specific fields */}
         {renderTypeFields()}
+
+        {/* Raw XML source — shown for XML-imported developments */}
+        {!isNew && development?.raw_xml && (
+          <FormSection title="Raw XML Source" columns={1}>
+            <CodeEditor
+              value={development.raw_xml}
+              onChange={() => {}}
+              language="xml"
+              height="300px"
+              readOnly
+            />
+          </FormSection>
+        )}
       </RecordForm>
 
       <ConfirmDialog

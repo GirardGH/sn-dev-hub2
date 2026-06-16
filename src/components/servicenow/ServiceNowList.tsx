@@ -10,9 +10,12 @@ import {
   ChevronDown,
   ChevronsUpDown,
   Loader2,
+  Trash2,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FilterBuilder, type FilterCondition, type FilterField } from "./FilterBuilder";
 import { ColumnConfigurator, type ColumnDef } from "./ColumnConfigurator";
 import { cn } from "@/lib/utils";
@@ -35,6 +38,7 @@ interface ServiceNowListProps<T extends { id: string }> {
   newLabel?: string;
   extraActions?: React.ReactNode;
   emptyMessage?: string;
+  onDeleteSelected?: (ids: string[]) => Promise<void>;
 }
 
 export function ServiceNowList<T extends { id: string }>({
@@ -50,6 +54,7 @@ export function ServiceNowList<T extends { id: string }>({
   newLabel = "New",
   extraActions,
   emptyMessage = "No records found.",
+  onDeleteSelected,
 }: ServiceNowListProps<T>) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<string>("");
@@ -57,6 +62,8 @@ export function ServiceNowList<T extends { id: string }>({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [filterConditions, setFilterConditions] = useState<FilterCondition[]>([]);
   const [activeFilters, setActiveFilters] = useState<FilterCondition[]>([]);
+  const [confirmBulkDelete, setConfirmBulkDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const visibleColumns = useMemo(
     () =>
@@ -105,6 +112,21 @@ export function ServiceNowList<T extends { id: string }>({
     }
     return result;
   }, [data, search, activeFilters, sortKey, sortDir, applyFilter]);
+
+  async function handleBulkDelete() {
+    if (!onDeleteSelected) return;
+    setDeleting(true);
+    try {
+      await onDeleteSelected(Array.from(selected));
+      setSelected(new Set());
+      onRefresh?.();
+    } catch (err) {
+      toast.error("Erreur lors de la suppression : " + String(err));
+    } finally {
+      setDeleting(false);
+      setConfirmBulkDelete(false);
+    }
+  }
 
   function toggleSort(key: string) {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -186,8 +208,18 @@ export function ServiceNowList<T extends { id: string }>({
             title="Export CSV"
           />
 
-          {/* Refresh */}
-          {onRefresh && (
+          {/* Refresh / Bulk delete — delete replaces refresh when rows are selected */}
+          {onDeleteSelected && selected.size > 0 ? (
+            <Button
+              size="sm"
+              icon={<Trash2 className="w-3.5 h-3.5" />}
+              onClick={() => setConfirmBulkDelete(true)}
+              loading={deleting}
+              className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 shadow-sm"
+            >
+              Supprimer ({selected.size})
+            </Button>
+          ) : onRefresh ? (
             <Button
               variant="secondary"
               size="sm"
@@ -196,7 +228,7 @@ export function ServiceNowList<T extends { id: string }>({
               loading={loading}
               title="Refresh"
             />
-          )}
+          ) : null}
 
           {/* Extra */}
           {extraActions}
@@ -275,20 +307,27 @@ export function ServiceNowList<T extends { id: string }>({
                   key={row.id}
                   onClick={() => onRowClick?.(row)}
                   className={cn(
-                    "border-b border-sn-border last:border-0 transition-colors",
+                    "border-b border-sn-border last:border-0 transition-colors group",
                     idx % 2 === 1 ? "bg-sn-table-stripe" : "bg-white",
                     onRowClick && "cursor-pointer hover:bg-sn-accent-light"
                   )}
                 >
                   <td className="w-8 px-3 py-2" onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selected.has(row.id)}
-                      onChange={() => {
-                        const next = new Set(selected);
-                        if (next.has(row.id)) { next.delete(row.id); } else { next.add(row.id); }
-                        setSelected(next);
-                      }}
-                    />
+                    <div className={cn(
+                      "transition-opacity",
+                      selected.has(row.id) || selected.size > 0
+                        ? "opacity-100"
+                        : "opacity-0 group-hover:opacity-100"
+                    )}>
+                      <Checkbox
+                        checked={selected.has(row.id)}
+                        onChange={() => {
+                          const next = new Set(selected);
+                          if (next.has(row.id)) { next.delete(row.id); } else { next.add(row.id); }
+                          setSelected(next);
+                        }}
+                      />
+                    </div>
                   </td>
                   {visibleColumns.map((col) => (
                     <td key={col.key} className="px-3 py-2 text-sn-text">
@@ -302,6 +341,15 @@ export function ServiceNowList<T extends { id: string }>({
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        open={confirmBulkDelete}
+        onClose={() => setConfirmBulkDelete(false)}
+        onConfirm={handleBulkDelete}
+        loading={deleting}
+        title="Confirmer la suppression"
+        message={`Supprimer ${selected.size} enregistrement${selected.size > 1 ? "s" : ""} ? Cette action est irréversible.`}
+      />
     </div>
   );
 }

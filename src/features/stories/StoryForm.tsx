@@ -16,10 +16,12 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { formatDate } from "@/lib/utils";
 import { createStory, updateStory, deleteStory } from "./story.actions";
+import { deleteDevelopments } from "@/features/developments/development.actions";
 import { storySchema, type StoryFormValues, type Story, STORY_STATUSES, STORY_PRIORITIES } from "./story.types";
 import type { Client } from "@/features/clients/client.types";
 import type { Development } from "@/features/developments/development.types";
 import { DEVELOPMENT_TYPE_MAP } from "@/features/developments/developmentTypes";
+import { resolveSnLabel } from "@/features/xml/snTableRegistry";
 
 const STATUS_OPTIONS = STORY_STATUSES.map((s) => ({
   value: s,
@@ -36,7 +38,7 @@ const PRIORITY_OPTIONS = [
 
 const devColumns: RelatedColumn<Development>[] = [
   { key: "title", label: "Title", visible: true, render: (r) => <span className="text-sn-accent font-medium">{r.title}</span> },
-  { key: "development_type", label: "Type", visible: true, render: (r) => DEVELOPMENT_TYPE_MAP[r.development_type as keyof typeof DEVELOPMENT_TYPE_MAP]?.label ?? r.development_type },
+  { key: "development_type", label: "Type", visible: true, render: (r) => DEVELOPMENT_TYPE_MAP[r.development_type as keyof typeof DEVELOPMENT_TYPE_MAP]?.label ?? resolveSnLabel(r.development_type) },
   { key: "target_table", label: "Table", visible: true },
   { key: "status", label: "Status", visible: true, render: (r) => <StatusBadge status={r.status} /> },
   { key: "update_set", label: "Update Set", visible: true },
@@ -136,6 +138,11 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
       }
       onRefresh={() => router.refresh()}
       emptyMessage="No developments yet."
+      onDeleteSelected={async (ids) => {
+        await deleteDevelopments(ids, story!.id, resolvedClientId);
+        toast.success(`${ids.length} développement${ids.length > 1 ? "s" : ""} supprimé${ids.length > 1 ? "s" : ""}.`);
+        router.refresh();
+      }}
       extraActions={
         <Button
           variant="secondary"

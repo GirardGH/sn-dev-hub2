@@ -108,3 +108,12 @@ export async function deleteDevelopment(id: string, storyId: string, clientId: s
   revalidatePath("/developments");
   revalidatePath(`/clients/${clientId}/stories/${storyId}`);
 }
+
+export async function deleteDevelopments(ids: string[], storyId?: string, clientId?: string): Promise<void> {
+  if (ids.length === 0) return;
+  const supabase = await createServerSupabaseClient();
+  const { error } = await supabase.from("developments").delete().in("id", ids);
+  if (error) throw new Error(error.message);
+  revalidatePath("/developments");
+  if (clientId && storyId) revalidatePath(`/clients/${clientId}/stories/${storyId}`);
+}

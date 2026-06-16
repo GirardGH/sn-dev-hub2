@@ -1,29 +1,38 @@
 "use client";
 
-import { CheckSquare, Square, FileCode2 } from "lucide-react";
+import { CheckSquare, Square, FileCode2, ExternalLink, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { DEVELOPMENT_TYPE_OPTIONS } from "@/features/developments/developmentTypes";
+import { resolveSnLabel, isKnownSnTable } from "./snTableRegistry";
 import type { ParsedComponent } from "./xml.types";
 
-const KNOWN_TYPE_VALUES = new Set<string>(DEVELOPMENT_TYPE_OPTIONS.map((o) => o.value));
+const KNOWN_DEV_TYPE_VALUES = new Set<string>(DEVELOPMENT_TYPE_OPTIONS.map((o) => o.value));
 
 interface Props {
   filename: string;
   components: ParsedComponent[];
   onChange: (components: ParsedComponent[]) => void;
   onReset?: () => void;
+  clientId?: string;
+  storyId?: string;
+  checking?: boolean;
 }
 
-export function XmlImportPreview({ filename, components, onChange }: Props) {
+export function XmlImportPreview({
+  filename,
+  components,
+  onChange,
+  clientId,
+  storyId,
+  checking,
+}: Props) {
   function toggleAll() {
     const allSelected = components.every((c) => c.selected);
     onChange(components.map((c) => ({ ...c, selected: !allSelected })));
   }
 
   function toggleOne(index: number) {
-    onChange(
-      components.map((c, i) => (i === index ? { ...c, selected: !c.selected } : c))
-    );
+    onChange(components.map((c, i) => (i === index ? { ...c, selected: !c.selected } : c)));
   }
 
   function updateTitle(index: number, title: string) {
@@ -32,6 +41,10 @@ export function XmlImportPreview({ filename, components, onChange }: Props) {
 
   function updateType(index: number, developmentType: string) {
     onChange(components.map((c, i) => (i === index ? { ...c, developmentType } : c)));
+  }
+
+  function updateAction(index: number, importAction: "create" | "update" | "skip") {
+    onChange(components.map((c, i) => (i === index ? { ...c, importAction } : c)));
   }
 
   const allSelected = components.every((c) => c.selected);
@@ -46,98 +59,166 @@ export function XmlImportPreview({ filename, components, onChange }: Props) {
           <span className="text-xs text-sn-text-muted">
             — {components.length} composant(s) détecté(s)
           </span>
+          {checking && (
+            <span className="flex items-center gap-1 text-xs text-amber-600">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Vérification des doublons…
+            </span>
+          )}
         </div>
         <button
           onClick={toggleAll}
           className="flex items-center gap-1 text-xs text-sn-accent hover:underline"
         >
-          {allSelected ? <CheckSquare className="w-3.5 h-3.5" /> : <Square className="w-3.5 h-3.5" />}
+          {allSelected ? (
+            <CheckSquare className="w-3.5 h-3.5" />
+          ) : (
+            <Square className="w-3.5 h-3.5" />
+          )}
           {allSelected ? "Deselect all" : "Select all"}
         </button>
       </div>
 
       {/* Table */}
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b border-sn-border bg-gray-50/50">
-            <th className="w-10 px-3 py-2 text-left">
-              <Checkbox
-                checked={allSelected}
-                onChange={toggleAll}
-              />
-            </th>
-            <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
-              Title
-            </th>
-            <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
-              Type
-            </th>
-            <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
-              XML Tag
-            </th>
-            <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
-              Target Table
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {components.length === 0 ? (
-            <tr>
-              <td colSpan={5} className="px-3 py-6 text-center text-sm text-sn-text-muted">
-                No components detected.
-              </td>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-sn-border bg-gray-50/50">
+              <th className="w-10 px-3 py-2 text-left">
+                <Checkbox checked={allSelected} onChange={toggleAll} />
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
+                Title
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
+                Type
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
+                {checking ? (
+                  <span className="flex items-center gap-1">
+                    Action <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
+                  </span>
+                ) : (
+                  "Action"
+                )}
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
+                XML Tag
+              </th>
+              <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
+                Target Table
+              </th>
             </tr>
-          ) : (
-            components.map((comp, index) => (
-              <tr
-                key={index}
-                className={`border-b border-sn-border last:border-0 transition-colors ${
-                  comp.selected ? "bg-white" : "bg-gray-50 opacity-60"
-                }`}
-              >
-                <td className="px-3 py-2">
-                  <Checkbox checked={comp.selected} onChange={() => toggleOne(index)} />
-                </td>
-                <td className="px-3 py-2">
-                  <input
-                    type="text"
-                    value={comp.title}
-                    onChange={(e) => updateTitle(index, e.target.value)}
-                    className="w-full text-sm border-0 border-b border-transparent hover:border-sn-border focus:border-sn-accent outline-none bg-transparent py-0.5"
-                    placeholder="Component name..."
-                  />
-                </td>
-                <td className="px-3 py-2">
-                  <select
-                    value={comp.developmentType}
-                    onChange={(e) => updateType(index, e.target.value)}
-                    className="text-xs border border-sn-border rounded px-1.5 py-1 bg-white outline-none focus:border-sn-accent"
-                  >
-                    {!KNOWN_TYPE_VALUES.has(comp.developmentType) && (
-                      <option value={comp.developmentType}>
-                        Unknown ({comp.developmentType})
-                      </option>
-                    )}
-                    {DEVELOPMENT_TYPE_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>
-                        {opt.label}
-                      </option>
-                    ))}
-                  </select>
-                </td>
-                <td className="px-3 py-2">
-                  <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-sn-text-muted">
-                    {comp.xmlTag}
-                  </code>
-                </td>
-                <td className="px-3 py-2 text-xs text-sn-text-muted">
-                  {comp.targetTable ?? "—"}
+          </thead>
+          <tbody>
+            {components.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-3 py-6 text-center text-sm text-sn-text-muted">
+                  No components detected.
                 </td>
               </tr>
-            ))
-          )}
-        </tbody>
-      </table>
+            ) : (
+              components.map((comp, index) => {
+                const action = comp.importAction ?? "create";
+                const isExisting = !!comp.existingId;
+                // undefined = not yet checked, null = checked/no match, string = matched
+                const hasDuplicateInfo = comp.existingId !== undefined;
+
+                return (
+                  <tr
+                    key={index}
+                    className={`border-b border-sn-border last:border-0 transition-colors ${
+                      action === "skip"
+                        ? "opacity-40 bg-gray-50"
+                        : comp.selected
+                        ? "bg-white"
+                        : "bg-gray-50 opacity-60"
+                    }`}
+                  >
+                    <td className="px-3 py-2">
+                      <Checkbox checked={comp.selected} onChange={() => toggleOne(index)} />
+                    </td>
+                    <td className="px-3 py-2">
+                      <input
+                        type="text"
+                        value={comp.title}
+                        onChange={(e) => updateTitle(index, e.target.value)}
+                        className="w-full text-sm border-0 border-b border-transparent hover:border-sn-border focus:border-sn-accent outline-none bg-transparent py-0.5"
+                        placeholder="Component name..."
+                      />
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={comp.developmentType}
+                        onChange={(e) => updateType(index, e.target.value)}
+                        className="text-xs border border-sn-border rounded px-1.5 py-1 bg-white outline-none focus:border-sn-accent"
+                      >
+                        {!KNOWN_DEV_TYPE_VALUES.has(comp.developmentType) && (
+                          <option value={comp.developmentType}>
+                            {isKnownSnTable(comp.developmentType)
+                              ? `${resolveSnLabel(comp.developmentType)} — non mappé`
+                              : `${comp.developmentType} — inconnu`}
+                          </option>
+                        )}
+                        {DEVELOPMENT_TYPE_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2">
+                      <div className="flex items-center gap-1.5">
+                        {hasDuplicateInfo && (
+                          <span
+                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border flex-shrink-0 ${
+                              isExisting
+                                ? "bg-amber-50 text-amber-700 border-amber-200"
+                                : "bg-green-50 text-green-700 border-green-200"
+                            }`}
+                          >
+                            {isExisting ? "Existant" : "Nouveau"}
+                          </span>
+                        )}
+                        <select
+                          value={action}
+                          onChange={(e) =>
+                            updateAction(index, e.target.value as "create" | "update" | "skip")
+                          }
+                          className="text-xs border border-sn-border rounded px-1.5 py-1 bg-white outline-none focus:border-sn-accent"
+                        >
+                          <option value="create">Créer</option>
+                          <option value="update">Mettre à jour</option>
+                          <option value="skip">Ignorer</option>
+                        </select>
+                        {comp.existingId && clientId && storyId && (
+                          <a
+                            href={`/clients/${clientId}/stories/${storyId}/developments/${comp.existingId}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sn-accent hover:opacity-70 flex-shrink-0"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </a>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2">
+                      <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-sn-text-muted">
+                        {comp.xmlTag}
+                      </code>
+                    </td>
+                    <td className="px-3 py-2 text-xs text-sn-text-muted">
+                      {comp.targetTable ?? "—"}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -18,6 +18,7 @@ import {
   updateClient,
   deleteClient,
 } from "./client.actions";
+import { deleteStories } from "@/features/stories/story.actions";
 import {
   clientSchema,
   type ClientFormValues,
@@ -133,6 +134,11 @@ export function ClientFormClient({ client, stories = [] }: Props) {
               onNew={() => router.push(`/clients/${client.id}/stories/new`)}
               onRefresh={() => router.refresh()}
               emptyMessage="No stories yet."
+              onDeleteSelected={async (ids) => {
+                await deleteStories(ids, client.id);
+                toast.success(`${ids.length} stor${ids.length > 1 ? "ies" : "y"} supprimée${ids.length > 1 ? "s" : ""}.`);
+                router.refresh();
+              }}
             />
           ) : undefined
         }

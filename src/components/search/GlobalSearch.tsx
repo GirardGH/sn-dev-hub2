@@ -11,10 +11,11 @@ import {
   type DevelopmentResult,
 } from "@/features/search/search.actions";
 import { DEVELOPMENT_TYPE_MAP } from "@/features/developments/developmentTypes";
+import { resolveSnLabel } from "@/features/xml/snTableRegistry";
 import { cn } from "@/lib/utils";
 
 function devTypeLabel(type: string): string {
-  return DEVELOPMENT_TYPE_MAP[type as keyof typeof DEVELOPMENT_TYPE_MAP]?.label ?? type;
+  return DEVELOPMENT_TYPE_MAP[type as keyof typeof DEVELOPMENT_TYPE_MAP]?.label ?? resolveSnLabel(type);
 }
 
 export function GlobalSearch() {

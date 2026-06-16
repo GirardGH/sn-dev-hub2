@@ -2,11 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { Building2 } from "lucide-react";
+import { toast } from "sonner";
 import { ServiceNowList, type ListColumn } from "@/components/servicenow/ServiceNowList";
 import { StatusBadge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import type { Client } from "./client.types";
 import type { FilterField } from "@/components/servicenow/FilterBuilder";
+import { deleteClients } from "./client.actions";
 
 const filterFields: FilterField[] = [
   { key: "name", label: "Name" },
@@ -40,6 +42,12 @@ interface Props {
 export function ClientListClient({ clients }: Props) {
   const router = useRouter();
 
+  async function handleDeleteSelected(ids: string[]) {
+    await deleteClients(ids);
+    toast.success(`${ids.length} client${ids.length > 1 ? "s" : ""} supprimé${ids.length > 1 ? "s" : ""}.`);
+    router.refresh();
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -59,6 +67,7 @@ export function ClientListClient({ clients }: Props) {
         onRowClick={(row) => router.push(`/clients/${row.id}`)}
         onNew={() => router.push("/clients/new")}
         onRefresh={() => router.refresh()}
+        onDeleteSelected={handleDeleteSelected}
         emptyMessage="No clients yet. Click New to create your first client."
       />
     </div>

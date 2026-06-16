@@ -1,6 +1,6 @@
 import type { ParsedComponent, XmlParseResult } from "./xml.types";
 
-// XML tag → dev type (direct export / flat format)
+// XML tag → dev type (direct / flat export format)
 const XML_TAG_TO_DEV_TYPE: Record<string, string> = {
   sys_script: "business_rule",
   sys_script_include: "script_include",
@@ -27,6 +27,7 @@ const XML_TAG_TO_DEV_TYPE: Record<string, string> = {
 };
 
 // <type> label inside sys_update_xml → dev type (update set / unload format)
+// Keys are lowercase. Types not listed fall back to the xmlTag (table name).
 const UPDATE_TYPE_TO_DEV_TYPE: Record<string, string> = {
   "system property": "system_property",
   "script include": "script_include",
@@ -43,13 +44,20 @@ const UPDATE_TYPE_TO_DEV_TYPE: Record<string, string> = {
   "message": "ui_message",
   "system property category": "system_property_category",
   "category property": "category_property",
+  "widget": "widget",
+  "catalog item": "catalog_item",
+  "order guide": "catalog_item",
+  "record producer": "record_producer",
+  "transform map": "transform_map",
+  "data source": "data_source",
+  "scripted rest api": "scripted_rest_api",
+  "scripted rest api function": "scripted_rest_operation",
 };
 
 function getTextContent(el: Element, tagName: string): string {
   return el.querySelector(tagName)?.textContent?.trim() ?? "";
 }
 
-// Only look at immediate children to avoid diving into nested elements (e.g. payload)
 function getDirectChildText(parent: Element, tagName: string): string {
   const lower = tagName.toLowerCase();
   for (let i = 0; i < parent.children.length; i++) {
@@ -210,19 +218,36 @@ function extractConfigFromXmlNode(el: Element, devType: string): Record<string, 
       break;
 
     default:
-      config.name = getTextContent(el, "name") || getTextContent(el, "sys_name");
+      // For unrecognised types: extract every child element so the generic form
+      // has all available data. Reference fields in SN XML carry a display_value
+      // attribute (human label) alongside the raw sys_id text content.
+      for (let i = 0; i < el.children.length; i++) {
+        const child = el.children[i];
+        const key = child.tagName.toLowerCase();
+        const displayValue = child.getAttribute("display_value");
+        const rawText = child.textContent?.trim() ?? "";
+        // Prefer display_value when set; avoids surfacing opaque sys_id hashes
+        const val =
+          displayValue !== null && displayValue !== "" ? displayValue : rawText;
+        if (val === "true") {
+          config[key] = true;
+        } else if (val === "false") {
+          config[key] = false;
+        } else if (val !== "") {
+          config[key] = val;
+        }
+      }
       break;
   }
 
   return config;
 }
 
-// Derive the XML table name from the update_name field (strip trailing _<32hexchars>)
+// Derive the table name from an update_name field (strip trailing _<32hexchars>)
 function xmlTagFromUpdateName(name: string): string {
   return name.replace(/_[a-f0-9]{32}$/i, "") || name;
 }
 
-// Map a <sys_update_xml> element to a ParsedComponent
 function mapUpdateXmlToComponent(el: Element): ParsedComponent | null {
   const name = getDirectChildText(el, "name");
   const typeLabel = getDirectChildText(el, "type");
@@ -233,7 +258,8 @@ function mapUpdateXmlToComponent(el: Element): ParsedComponent | null {
   if (!name && !typeLabel) return null;
 
   const xmlTag = xmlTagFromUpdateName(name);
-  const devType = UPDATE_TYPE_TO_DEV_TYPE[typeLabel.toLowerCase()] ?? "unknown";
+  // Fall back to the xmlTag (table name) instead of "unknown" for unmapped types
+  const devType = UPDATE_TYPE_TO_DEV_TYPE[typeLabel.toLowerCase()] ?? xmlTag;
   const title = targetName || name;
 
   let config: Record<string, unknown> = {
@@ -243,7 +269,6 @@ function mapUpdateXmlToComponent(el: Element): ParsedComponent | null {
   };
   let targetTable: string | null = null;
 
-  // Try to parse the payload XML to extract detailed config fields
   if (payloadText) {
     try {
       const innerParser = new DOMParser();
@@ -251,12 +276,10 @@ function mapUpdateXmlToComponent(el: Element): ParsedComponent | null {
       if (!innerDoc.querySelector("parsererror")) {
         const recordUpdate = innerDoc.querySelector("record_update");
         if (recordUpdate) {
-          // First child element of <record_update> is the actual record
           const recordEl = recordUpdate.children[0];
           if (recordEl) {
             const extracted = extractConfigFromXmlNode(recordEl, devType);
             config = { ...config, ...extracted };
-            // Derive target table for types that are table-scoped
             switch (devType) {
               case "business_rule":
               case "notification":
@@ -274,7 +297,7 @@ function mapUpdateXmlToComponent(el: Element): ParsedComponent | null {
         }
       }
     } catch {
-      // Payload could not be parsed, keep basic config
+      // Payload unparseable — keep basic config
     }
   }
 
@@ -289,26 +312,22 @@ function mapUpdateXmlToComponent(el: Element): ParsedComponent | null {
   };
 }
 
-// ── Direct / flat export format helpers ──────────────────────────────────────
-
-function detectServiceNowComponents(doc: Document): Element[] {
-  const results: Element[] = [];
-  for (const tag of Object.keys(XML_TAG_TO_DEV_TYPE)) {
-    const elements = doc.getElementsByTagName(tag);
-    for (let i = 0; i < elements.length; i++) {
-      results.push(elements[i]);
-    }
-  }
-  return results;
-}
-
-function mapXmlNodeToDevelopment(el: Element): ParsedComponent | null {
+function mapDirectXmlNode(el: Element): ParsedComponent | null {
   const tagName = el.tagName.toLowerCase();
-  const devType = XML_TAG_TO_DEV_TYPE[tagName];
-  if (!devType) return null;
 
+  // Skip XML infrastructure elements
+  if (tagName === "parsererror" || tagName === "unload") return null;
+
+  // Known type → use its mapped dev type; unknown → use the tag itself
+  const devType = XML_TAG_TO_DEV_TYPE[tagName] ?? tagName;
   const config = extractConfigFromXmlNode(el, devType);
-  const name = (config.name as string) || el.getAttribute("sys_id") || "Unnamed";
+
+  const name =
+    (config.name as string) ||
+    el.getAttribute("sys_id") ||
+    el.getAttribute("name") ||
+    tagName;
+
   let targetTable: string | null = null;
   switch (devType) {
     case "business_rule":
@@ -334,8 +353,6 @@ function mapXmlNodeToDevelopment(el: Element): ParsedComponent | null {
     selected: true,
   };
 }
-
-// ── Public entry point ────────────────────────────────────────────────────────
 
 export function parseServiceNowXml(xmlString: string, filename: string): XmlParseResult {
   const errors: string[] = [];
@@ -369,31 +386,31 @@ export function parseServiceNowXml(xmlString: string, filename: string): XmlPars
 
   const rootTag = doc.documentElement?.tagName?.toLowerCase();
 
-  // ── Update set format: <unload> root with <sys_update_xml> entries ──
+  // ── Update set format: <unload> root with <sys_update_xml> children ──────
   if (rootTag === "unload") {
     const updateXmls = doc.getElementsByTagName("sys_update_xml");
-    for (let i = 0; i < updateXmls.length; i++) {
-      const comp = mapUpdateXmlToComponent(updateXmls[i]);
-      if (comp) components.push(comp);
+    if (updateXmls.length > 0) {
+      for (let i = 0; i < updateXmls.length; i++) {
+        const comp = mapUpdateXmlToComponent(updateXmls[i]);
+        if (comp) components.push(comp);
+      }
+      if (components.length === 0) {
+        errors.push("Aucun composant ServiceNow reconnu dans ce fichier XML.");
+      }
+      return { components, errors, rawXml: xmlString, filename };
     }
-    if (components.length === 0) {
-      errors.push("Aucun composant ServiceNow reconnu dans ce fichier XML.");
-    }
-    return { components, errors, rawXml: xmlString, filename };
+    // Fall through: <unload> root without sys_update_xml → direct record export
   }
 
-  // ── Direct export format: known tags appear at document level ──
-  const elements = detectServiceNowComponents(doc);
-  if (elements.length === 0) {
-    errors.push("Aucun composant ServiceNow reconnu dans ce fichier XML.");
+  // ── Direct export format: scan all direct children of the root element ───
+  const rootEl = doc.documentElement;
+  for (let i = 0; i < rootEl.children.length; i++) {
+    const comp = mapDirectXmlNode(rootEl.children[i]);
+    if (comp) components.push(comp);
   }
-  for (const el of elements) {
-    const component = mapXmlNodeToDevelopment(el);
-    if (component) {
-      components.push(component);
-    } else {
-      errors.push(`Tag non mappé : ${el.tagName}`);
-    }
+
+  if (components.length === 0) {
+    errors.push("Aucun composant ServiceNow reconnu dans ce fichier XML.");
   }
 
   return { components, errors, rawXml: xmlString, filename };

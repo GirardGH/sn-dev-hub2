@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/Badge";
 import { formatDateTime } from "@/lib/utils";
 import { DEVELOPMENT_TYPE_MAP } from "@/features/developments/developmentTypes";
+import { resolveSnLabel } from "@/features/xml/snTableRegistry";
 
 interface Stats {
   clients: number;
@@ -159,7 +160,7 @@ export function DashboardClient({ stats, recentDevelopments, recentImports }: Pr
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-sn-text truncate">{dev.title}</p>
                       <p className="text-xs text-sn-text-muted mt-0.5">
-                        {DEVELOPMENT_TYPE_MAP[dev.development_type as keyof typeof DEVELOPMENT_TYPE_MAP]?.label ?? dev.development_type}
+                        {DEVELOPMENT_TYPE_MAP[dev.development_type as keyof typeof DEVELOPMENT_TYPE_MAP]?.label ?? resolveSnLabel(dev.development_type)}
                         {dev.clients ? ` · ${dev.clients.name}` : ""}
                       </p>
                     </div>

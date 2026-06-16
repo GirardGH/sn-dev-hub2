@@ -36,7 +36,9 @@ export async function searchAll(query: string): Promise<SearchAllResult> {
   }
 
   const supabase = await createServerSupabaseClient();
-  const pattern = `%${q}%`;
+  // .or() uses PostgREST URL filter syntax where * is the wildcard for ilike (not %)
+  const safeQ = q.replace(/[*%]/g, "\\$&");
+  const pattern = `*${safeQ}*`;
 
   const [clientsRes, storiesRes, devsRes] = await Promise.all([
     supabase
@@ -59,6 +61,10 @@ export async function searchAll(query: string): Promise<SearchAllResult> {
       )
       .limit(5),
   ]);
+
+  if (clientsRes.error) console.error("[search] clients:", clientsRes.error.message);
+  if (storiesRes.error) console.error("[search] stories:", storiesRes.error.message);
+  if (devsRes.error) console.error("[search] developments:", devsRes.error.message);
 
   return {
     clients: (clientsRes.data ?? []) as ClientResult[],

@@ -2,9 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { FileCode2 } from "lucide-react";
+import { toast } from "sonner";
 import { ServiceNowList, type ListColumn } from "@/components/servicenow/ServiceNowList";
 import { StatusBadge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
+import { deleteXmlImports } from "./xml.actions";
 import type { XmlImport } from "./xml.types";
 
 type XmlImportWithRelations = XmlImport & {
@@ -33,6 +35,12 @@ interface Props {
 export function XmlImportListClient({ imports }: Props) {
   const router = useRouter();
 
+  async function handleDeleteSelected(ids: string[]) {
+    await deleteXmlImports(ids);
+    toast.success(`${ids.length} import${ids.length > 1 ? "s" : ""} supprimé${ids.length > 1 ? "s" : ""}.`);
+    router.refresh();
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -49,6 +57,7 @@ export function XmlImportListClient({ imports }: Props) {
         onRowClick={(row) => router.push(`/xml-imports/${row.id}`)}
         onNew={() => router.push("/xml-imports/new")}
         onRefresh={() => router.refresh()}
+        onDeleteSelected={handleDeleteSelected}
         newLabel="Import XML"
         emptyMessage="No XML imports yet. Upload a ServiceNow update set XML."
       />

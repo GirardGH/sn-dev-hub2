@@ -2,11 +2,13 @@
 
 import { useRouter } from "next/navigation";
 import { BookOpen } from "lucide-react";
+import { toast } from "sonner";
 import { ServiceNowList, type ListColumn } from "@/components/servicenow/ServiceNowList";
 import { StatusBadge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import type { Story } from "./story.types";
 import type { FilterField } from "@/components/servicenow/FilterBuilder";
+import { deleteStories } from "./story.actions";
 
 interface StoryWithClient extends Omit<Story, "clients"> {
   clients?: { id: string; name: string; code: string | null } | null;
@@ -65,6 +67,12 @@ export function StoryListClient({ stories }: Props) {
 
   const columns = buildColumns((clientId) => router.push(`/clients/${clientId}`));
 
+  async function handleDeleteSelected(ids: string[]) {
+    await deleteStories(ids);
+    toast.success(`${ids.length} stor${ids.length > 1 ? "ies" : "y"} supprimée${ids.length > 1 ? "s" : ""}.`);
+    router.refresh();
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -85,6 +93,7 @@ export function StoryListClient({ stories }: Props) {
         }}
         onNew={() => router.push("/stories/new")}
         onRefresh={() => router.refresh()}
+        onDeleteSelected={handleDeleteSelected}
         emptyMessage="No stories yet. Create a client first, then add stories."
       />
     </div>
