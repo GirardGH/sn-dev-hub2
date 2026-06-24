@@ -31,6 +31,8 @@ import { ScriptIncludeFields } from "./fields/ScriptIncludeFields";
 import { GenericScriptFields } from "./fields/GenericScriptFields";
 import { GenericConfigFields } from "./fields/GenericConfigFields";
 import { WidgetFields } from "./fields/WidgetFields";
+import { NotificationConfigFields } from "./fields/NotificationConfigFields";
+import { FlowPreview, type FlowPreviewData } from "./fields/FlowPreview";
 import { CodeEditor } from "@/components/servicenow/CodeEditor";
 import { resolveSnLabel } from "@/features/xml/snTableRegistry";
 import type { Client } from "@/features/clients/client.types";
@@ -171,8 +173,19 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
         return <BusinessRuleFields config={config} onChange={handleConfigChange} />;
       case "script_include":
         return <ScriptIncludeFields config={config} onChange={handleConfigChange} />;
+      case "notification":
+        return <NotificationConfigFields config={config} onChange={handleConfigChange} />;
       case "widget":
         return <WidgetFields config={config} onChange={handleConfigChange} />;
+      case "flow":
+        return (
+          <>
+            {config.flow_preview && (
+              <FlowPreview data={config.flow_preview as FlowPreviewData} />
+            )}
+            <GenericScriptFields config={config} onChange={handleConfigChange} devType="flow" />
+          </>
+        );
       default:
         return <GenericScriptFields config={config} onChange={handleConfigChange} devType={selectedType} />;
     }

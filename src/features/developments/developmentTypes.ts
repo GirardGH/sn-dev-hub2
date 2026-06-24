@@ -130,8 +130,25 @@ export const DEVELOPMENT_TYPE_MAP: Record<DevelopmentTypeName, DevelopmentTypeCo
     label: "Notification",
     snTable: "sysevent_email_action",
     defaultConfig: {
-      name: "", table: "", when_to_send: "", condition: "", subject: "",
-      message: "", recipients: [], active: true,
+      // Identity
+      name: "", table: "", type: "email", active: true, description: "",
+      order: 100, weight: 0, category: "",
+      // When to send
+      generation_type: "event", event_name: "", condition: "",
+      advanced_condition: "", action_insert: false, action_update: true,
+      affected_field_on_event: "",
+      // Who will receive
+      item: "", item_table: "", recipient_users: "", recipient_groups: "",
+      recipient_fields: "", event_parm_1: false, event_parm_2: false,
+      send_self: false, exclude_delegates: false, subscribable: false,
+      // What it will contain
+      content_type: "text/html", template_name: "", template_sys_id: "",
+      subject: "", message_html: "", message_text: "", importance: "",
+      from: "", reply_to: "", sms_alternate: "",
+      // Delivery
+      omit_watermark: false, include_attachments: false,
+      push_message_only: false, force_delivery: false,
+      enable_dynamic_translation: false, mandatory: false, digestable: false,
     },
   },
   flow: {

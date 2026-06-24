@@ -151,14 +151,64 @@ function extractConfigFromXmlNode(el: Element, devType: string): Record<string, 
       config.active = getTextContent(el, "active") !== "false";
       break;
 
-    case "notification":
-      config.name = getTextContent(el, "name");
-      config.table = getTextContent(el, "collection");
-      config.when_to_send = getTextContent(el, "when_to_send");
-      config.condition = getTextContent(el, "condition");
-      config.subject = getTextContent(el, "subject");
-      config.active = getTextContent(el, "active") !== "false";
+    case "notification": {
+      // ── Identity ─────────────────────────────────────────────────────────
+      config.name        = getTextContent(el, "name");
+      config.table       = getTextContent(el, "collection");
+      config.type        = getTextContent(el, "type") || "email";
+      config.active      = getTextContent(el, "active") !== "false";
+      config.description = getTextContent(el, "description");
+      config.order       = parseInt(getTextContent(el, "order") || "100");
+      config.weight      = parseInt(getTextContent(el, "weight") || "0");
+      // category carries a display_value attribute (human label) in SN XML
+      const _catEl = el.querySelector("category");
+      config.category = _catEl?.getAttribute("display_value") || _catEl?.textContent?.trim() || "";
+
+      // ── When to send ──────────────────────────────────────────────────────
+      config.generation_type        = getTextContent(el, "generation_type") || "event";
+      config.event_name             = getTextContent(el, "event_name");
+      config.condition              = getTextContent(el, "condition");
+      config.advanced_condition     = getTextContent(el, "advanced_condition");
+      config.action_insert          = getTextContent(el, "action_insert") === "true";
+      config.action_update          = getTextContent(el, "action_update") === "true";
+      config.affected_field_on_event = getTextContent(el, "affected_field_on_event");
+
+      // ── Who will receive ──────────────────────────────────────────────────
+      config.item              = getTextContent(el, "item");         // e.g. "event.parm1"
+      config.item_table        = getTextContent(el, "item_table");
+      config.recipient_users   = getTextContent(el, "recipient_users");
+      config.recipient_groups  = getTextContent(el, "recipient_groups");
+      config.recipient_fields  = getTextContent(el, "recipient_fields");
+      config.event_parm_1      = getTextContent(el, "event_parm_1") === "true";
+      config.event_parm_2      = getTextContent(el, "event_parm_2") === "true";
+      config.send_self         = getTextContent(el, "send_self") === "true";
+      config.exclude_delegates = getTextContent(el, "exclude_delegates") === "true";
+      config.subscribable      = getTextContent(el, "subscribable") === "true";
+
+      // ── What it will contain ──────────────────────────────────────────────
+      config.content_type = getTextContent(el, "content_type") || "text/html";
+      // template carries a display_value for the human-readable template name
+      const _tmplEl = el.querySelector("template");
+      config.template_name   = _tmplEl?.getAttribute("display_value") || _tmplEl?.textContent?.trim() || "";
+      config.template_sys_id = _tmplEl?.textContent?.trim() || "";
+      config.subject         = getTextContent(el, "subject");
+      config.message_html    = getTextContent(el, "message_html");
+      config.message_text    = getTextContent(el, "message_text");
+      config.importance      = getTextContent(el, "importance");
+      config.from            = getTextContent(el, "from");
+      config.reply_to        = getTextContent(el, "reply_to");
+      config.sms_alternate   = getTextContent(el, "sms_alternate");
+
+      // ── Delivery options ──────────────────────────────────────────────────
+      config.omit_watermark             = getTextContent(el, "omit_watermark") === "true";
+      config.include_attachments        = getTextContent(el, "include_attachments") === "true";
+      config.push_message_only          = getTextContent(el, "push_message_only") === "true";
+      config.force_delivery             = getTextContent(el, "force_delivery") === "true";
+      config.enable_dynamic_translation = getTextContent(el, "enable_dynamic_translation") === "true";
+      config.mandatory                  = getTextContent(el, "mandatory") === "true";
+      config.digestable                 = getTextContent(el, "digestable") === "true";
       break;
+    }
 
     case "flow":
       config.name = getTextContent(el, "name");
@@ -248,6 +298,533 @@ function xmlTagFromUpdateName(name: string): string {
   return name.replace(/_[a-f0-9]{32}$/i, "") || name;
 }
 
+/**
+ * For a <record_update table="sys_hub_action_type_definition"> element, find
+ * the JavaScript script stored in a sibling sys_variable_value that belongs to
+ * the "Script" step instance:
+ *   action def (sys_id)
+ *     → sys_hub_step_instance (action = def sys_id, step_type display_value = "Script")
+ *       → sys_variable_value (document = sys_hub_step_instance,
+ *                             document_key = step sys_id,
+ *                             variable display_value = "Script")
+ *
+ * Used for both the direct-export format (rootEl = <record_update>) and the
+ * update-set payload format (inner parsed <record_update>).
+ */
+function extractActionDefinitionScript(recordUpdate: Element): string {
+  const actionDefEl = recordUpdate.querySelector("sys_hub_action_type_definition");
+  const actionSysId =
+    actionDefEl?.querySelector("sys_id")?.textContent?.trim() ?? "";
+
+  // Collect sys_ids of Script-typed step instances linked to this action
+  const scriptStepIds: string[] = [];
+  const stepEls = recordUpdate.querySelectorAll("sys_hub_step_instance");
+  for (let s = 0; s < stepEls.length; s++) {
+    const stepEl = stepEls[s];
+    const stepSysId =
+      stepEl.querySelector("sys_id")?.textContent?.trim() ?? "";
+    const stepAction =
+      stepEl.querySelector("action")?.textContent?.trim() ?? "";
+    const stepTypeDisplay =
+      stepEl
+        .querySelector("step_type")
+        ?.getAttribute("display_value")
+        ?.toLowerCase() ?? "";
+    const stepLabel =
+      stepEl.querySelector("label")?.textContent?.trim().toLowerCase() ?? "";
+
+    const isScriptStep =
+      stepTypeDisplay === "script" || stepLabel.includes("script");
+    const isLinked = !actionSysId || stepAction === actionSysId;
+
+    if (isScriptStep && isLinked && stepSysId) {
+      scriptStepIds.push(stepSysId);
+    }
+  }
+
+  // Primary: sys_variable_value linked through the script step instance
+  if (scriptStepIds.length > 0) {
+    const varValueEls = recordUpdate.querySelectorAll("sys_variable_value");
+    for (let v = 0; v < varValueEls.length; v++) {
+      const varEl = varValueEls[v];
+      const docType =
+        varEl.querySelector("document")?.textContent?.trim() ?? "";
+      const docKey =
+        varEl.querySelector("document_key")?.textContent?.trim() ?? "";
+      const varDisplayName =
+        varEl.querySelector("variable")?.getAttribute("display_value") ?? "";
+      const valueText =
+        varEl.querySelector("value")?.textContent?.trim() ?? "";
+
+      if (
+        docType === "sys_hub_step_instance" &&
+        scriptStepIds.includes(docKey) &&
+        varDisplayName === "Script" &&
+        valueText
+      ) {
+        return valueText;
+      }
+    }
+  }
+
+  // Fallback: any sys_variable_value whose variable is "Script" and value
+  // looks like a Flow Action execute function
+  const allVarEls = recordUpdate.querySelectorAll("sys_variable_value");
+  for (let v = 0; v < allVarEls.length; v++) {
+    const varEl = allVarEls[v];
+    const varDisplayName =
+      varEl.querySelector("variable")?.getAttribute("display_value") ?? "";
+    const valueText =
+      varEl.querySelector("value")?.textContent?.trim() ?? "";
+    if (varDisplayName === "Script" && valueText.startsWith("(function execute")) {
+      return valueText;
+    }
+  }
+
+  return "";
+}
+
+// Detect If / Else If / Else / For Each branch type from a step label
+function detectBranchType(label: string): string | null {
+  const l = label.toLowerCase().trim();
+  if (l === "if" || l.startsWith("if ") || l.startsWith("if(")) return "if";
+  if (l.startsWith("else if")) return "else_if";
+  if (l === "else" || l.startsWith("else ")) return "else";
+  if (l.includes("for each") || l.includes("foreach")) return "for_each";
+  return null;
+}
+
+/**
+ * For a <record_update table="sys_hub_flow"> element (or <unload> root), extract
+ * the full flow structure (trigger, inputs, stages, action steps) for FlowPreview.
+ */
+function extractFlowPreview(recordUpdate: Element): Record<string, unknown> | null {
+  const flowEl = recordUpdate.querySelector("sys_hub_flow");
+  if (!flowEl) return null;
+
+  // ── Basic flow info ────────────────────────────────────────────────────────
+  const name = flowEl.querySelector("name")?.textContent?.trim() ?? "";
+  const description = flowEl.querySelector("description")?.textContent?.trim() ?? "";
+  const stateEl = flowEl.querySelector("state");
+  const status =
+    stateEl?.getAttribute("display_value") || stateEl?.textContent?.trim() || "";
+  const typeEl = flowEl.querySelector("type");
+  const type =
+    typeEl?.getAttribute("display_value") || typeEl?.textContent?.trim() || "";
+  const runAsEl = flowEl.querySelector("run_as");
+  const runAs =
+    runAsEl?.getAttribute("display_value") || runAsEl?.textContent?.trim() || "";
+  const sysId = flowEl.querySelector("sys_id")?.textContent?.trim() ?? "";
+
+  // ── Trigger ────────────────────────────────────────────────────────────────
+  let trigger: Record<string, unknown> | undefined;
+  const trigEl = recordUpdate.querySelector("sys_hub_trigger_instance_v2");
+  if (trigEl) {
+    const defEl = trigEl.querySelector("trigger_definition");
+    const definition =
+      defEl?.getAttribute("display_value") || defEl?.textContent?.trim() || "";
+    const trigName = trigEl.querySelector("name")?.textContent?.trim() ?? "";
+    const comment = trigEl.querySelector("comment")?.textContent?.trim() ?? "";
+    const tableEl = trigEl.querySelector("base_object_type");
+    const table =
+      tableEl?.getAttribute("display_value") || tableEl?.textContent?.trim() || "";
+    trigger = { name: trigName, definition, comment, table: table || undefined };
+  }
+  const catTrigEl = recordUpdate.querySelector("sys_flow_catalog_trigger");
+  if (catTrigEl) {
+    const ciEl = catTrigEl.querySelector("catalog_item");
+    const catalogItem =
+      ciEl?.getAttribute("display_value") || ciEl?.textContent?.trim() || "";
+    if (!trigger) trigger = { name: "", definition: "Service Catalog", comment: "" };
+    if (catalogItem) trigger.catalog_item = catalogItem;
+  }
+
+  // ── Inputs ─────────────────────────────────────────────────────────────────
+  const inputs: Record<string, unknown>[] = [];
+  const inputEls = recordUpdate.querySelectorAll("sys_hub_flow_input");
+  for (let i = 0; i < inputEls.length; i++) {
+    const el = inputEls[i];
+    if (el.getAttribute("action") === "delete_multiple") continue;
+    const element = el.querySelector("element")?.textContent?.trim() ?? "";
+    const label =
+      el.querySelector("label")?.textContent?.trim() ||
+      el.querySelector("column_label")?.textContent?.trim() ||
+      "";
+    const itEl = el.querySelector("internal_type");
+    const internalType =
+      itEl?.getAttribute("display_value") || itEl?.textContent?.trim() || "";
+    const mandatory = el.querySelector("mandatory")?.textContent?.trim() === "true";
+    const refEl = el.querySelector("reference");
+    const reference =
+      refEl?.getAttribute("display_value") ||
+      refEl?.getAttribute("name") ||
+      refEl?.textContent?.trim() ||
+      "";
+    const defaultValue = el.querySelector("default_value")?.textContent?.trim() ?? "";
+    const order = parseInt(el.querySelector("order")?.textContent?.trim() || "0") || 0;
+    if (element || label) {
+      inputs.push({
+        name: element,
+        label: label || element,
+        type: internalType,
+        mandatory,
+        reference: reference || undefined,
+        default_value: defaultValue || undefined,
+        order,
+      });
+    }
+  }
+  inputs.sort((a, b) => ((a.order as number) || 0) - ((b.order as number) || 0));
+
+  // ── Stages ─────────────────────────────────────────────────────────────────
+  const stages: Record<string, unknown>[] = [];
+  const stageEls = recordUpdate.querySelectorAll("sys_hub_flow_stage");
+  for (let i = 0; i < stageEls.length; i++) {
+    const el = stageEls[i];
+    if (el.getAttribute("action") === "delete_multiple") continue;
+    const label = el.querySelector("label")?.textContent?.trim() ?? "";
+    const value = el.querySelector("value")?.textContent?.trim() ?? "";
+    const order = parseInt(el.querySelector("order")?.textContent?.trim() || "0") || 0;
+    const stageType = el.querySelector("type")?.textContent?.trim() ?? "";
+    if (label || value) {
+      stages.push({ label, value, order, type: stageType });
+    }
+  }
+  stages.sort((a, b) => ((a.order as number) || 0) - ((b.order as number) || 0));
+
+  // ── Steps (action instances) ───────────────────────────────────────────────
+  const steps: Record<string, unknown>[] = [];
+  const actionEls = recordUpdate.querySelectorAll("sys_hub_action_instance");
+  for (let i = 0; i < actionEls.length; i++) {
+    const el = actionEls[i];
+    if (el.getAttribute("action") === "delete_multiple") continue;
+    const label =
+      el.querySelector("label")?.textContent?.trim() ||
+      el.querySelector("name")?.textContent?.trim() ||
+      "";
+    const order = parseInt(el.querySelector("order")?.textContent?.trim() || "0") || 0;
+    const stepSysId = el.querySelector("sys_id")?.textContent?.trim() ?? "";
+    const atEl = el.querySelector("action_type");
+    const actionType =
+      atEl?.getAttribute("display_value") || atEl?.textContent?.trim() || "";
+    if (label || stepSysId) {
+      steps.push({
+        order,
+        label: label || actionType,
+        type: "action",
+        table: "sys_hub_action_instance",
+        sys_id: stepSysId,
+        action: actionType,
+        uuid: stepSysId || undefined,
+        branch_type: detectBranchType(label || actionType),
+      });
+    }
+  }
+  steps.sort((a, b) => ((a.order as number) || 0) - ((b.order as number) || 0));
+
+  // ── label_cache fallback: when sys_hub_action_instance elements are absent ─
+  // Parses "N - ActionName➛OutputPath" entries to build enriched step data:
+  // uuid (action instance id), outputs (what the step produces), inputs (data
+  // pills consumed, resolved via usedInstances UUID → step order mapping).
+  if (steps.length === 0) {
+    const lcText = flowEl.querySelector("label_cache")?.textContent?.trim() ?? "";
+    if (lcText) {
+      try {
+        type LCEntry = {
+          name: string;
+          label: string;
+          reference?: string;
+          reference_display?: string;
+          type?: string;
+          choices?: Array<{ label: string; value: string }>;
+          usedInstances?: Record<string, string[]>;
+        };
+        const cache = JSON.parse(lcText) as LCEntry[];
+
+        // Extract trigger type if not already known
+        if (!trigger) {
+          for (const entry of cache) {
+            const tm = entry.label.match(/^Trigger\s*-\s*([^➛\n]+)/);
+            if (tm) {
+              const def = tm[1].trim();
+              trigger = { name: def, definition: def, comment: "" };
+              break;
+            }
+          }
+        }
+
+        // Phase 1 — UUID→order map + collect outputs per (order, label)
+        const uuidToOrder = new Map<string, number>();
+        type StepAccum = {
+          order: number;
+          label: string;
+          uuid: string;
+          seenPaths: Set<string>;
+          outputs: Record<string, unknown>[];
+        };
+        const accumMap = new Map<string, StepAccum>(); // key: "order-label"
+
+        for (const entry of cache) {
+          const m = entry.label.match(/^(\d+)\s*-\s*([^➛\n]+)(?:➛(.+))?$/);
+          if (!m) continue;
+          const order = parseInt(m[1]);
+          const actionLabel = m[2].trim();
+          const outputPath = m[3]?.trim() ?? "";
+
+          const dotIdx = (entry.name ?? "").indexOf(".");
+          const uuid = dotIdx >= 0 ? entry.name.substring(0, dotIdx) : (entry.name ?? "");
+          if (uuid && !uuidToOrder.has(uuid)) uuidToOrder.set(uuid, order);
+
+          const key = `${order}-${actionLabel}`;
+          if (!accumMap.has(key)) {
+            accumMap.set(key, { order, label: actionLabel, uuid, seenPaths: new Set(), outputs: [] });
+          }
+          const acc = accumMap.get(key)!;
+
+          if (outputPath && !acc.seenPaths.has(outputPath)) {
+            acc.seenPaths.add(outputPath);
+            acc.outputs.push({
+              path: outputPath,
+              type: entry.type ?? "",
+              reference: entry.reference || undefined,
+              reference_display: entry.reference_display || undefined,
+              choices: entry.choices
+                ?.filter((c) => c.value !== "")
+                .slice(0, 8)
+                .map((c) => ({ label: c.label, value: c.value })),
+            });
+          }
+        }
+
+        // Phase 2 — inputs map: which steps consume each output (via usedInstances)
+        const inputsMap = new Map<number, Record<string, unknown>[]>();
+        for (const entry of cache) {
+          if (!entry.usedInstances || Object.keys(entry.usedInstances).length === 0) continue;
+          const m = entry.label.match(/^(\d+)\s*-\s*([^➛\n]+)(?:➛(.+))?$/);
+          if (!m) continue;
+          const srcOrder = parseInt(m[1]);
+          const srcLabel = m[2].trim();
+          const field = m[3]?.trim() ?? "";
+          for (const [consumerUuid, usages] of Object.entries(entry.usedInstances)) {
+            const tgtOrder = uuidToOrder.get(consumerUuid);
+            if (!tgtOrder || tgtOrder === srcOrder) continue;
+            if (!inputsMap.has(tgtOrder)) inputsMap.set(tgtOrder, []);
+            const arr = inputsMap.get(tgtOrder)!;
+            if (!arr.some((inp) => (inp.source_order as number) === srcOrder && inp.field === field)) {
+              arr.push({ source_order: srcOrder, source_label: srcLabel, field, usages });
+            }
+          }
+        }
+
+        // Build final steps (accumMap is already deduplicated by order-label key)
+        for (const acc of Array.from(accumMap.values())) {
+          steps.push({
+            order: acc.order,
+            label: acc.label,
+            type: "action",
+            table: "sys_hub_action_instance",
+            sys_id: "",
+            action: acc.label,
+            uuid: acc.uuid || undefined,
+            outputs: acc.outputs.length > 0 ? acc.outputs : undefined,
+            inputs: inputsMap.get(acc.order) ?? undefined,
+            branch_type: detectBranchType(acc.label),
+          });
+        }
+
+        steps.sort((a, b) => {
+          const d = ((a.order as number) || 0) - ((b.order as number) || 0);
+          return d !== 0 ? d : String(a.label).localeCompare(String(b.label));
+        });
+      } catch { /* ignore malformed JSON */ }
+    }
+  }
+
+  return { name, description, status, type, run_as: runAs, sys_id: sysId, trigger, inputs, stages, steps };
+}
+
+// Collect records from a single payload text into a shared table→elements map.
+// Used for update-set format where payloads are escaped text, not DOM children.
+function collectPayloadRecords(
+  payloadText: string,
+  map: Map<string, Element[]>,
+): void {
+  try {
+    const innerDoc = new DOMParser().parseFromString(payloadText, "application/xml");
+    if (innerDoc.querySelector("parsererror")) return;
+    const recordUpdate = innerDoc.querySelector("record_update");
+    if (!recordUpdate) return;
+    for (let i = 0; i < recordUpdate.children.length; i++) {
+      const child = recordUpdate.children[i];
+      const table = child.tagName.toLowerCase();
+      if (table === "parsererror") continue;
+      if (!map.has(table)) map.set(table, []);
+      map.get(table)!.push(child);
+    }
+  } catch {
+    // Unparseable payload — skip
+  }
+}
+
+// Collect flow-related records from a direct-export root element (parsed DOM, not text).
+function collectRecordsFromDirectExport(rootEl: Element): Map<string, Element[]> {
+  const map = new Map<string, Element[]>();
+  const tables = [
+    "sys_hub_action_instance", "sys_variable_value", "sys_hub_step_instance",
+    "sys_hub_flow_logic", "sys_hub_flow_branch", "sys_flow_condition",
+    "sys_hub_action_value", "sys_element_mapping", "sys_hub_flow",
+    "sys_hub_trigger_instance_v2", "sys_flow_catalog_trigger",
+    "sys_hub_action_type_definition", "sys_hub_flow_input",
+  ];
+  for (const table of tables) {
+    const els = rootEl.querySelectorAll(table);
+    if (els.length > 0) map.set(table, Array.from(els));
+  }
+  return map;
+}
+
+interface FlowDebugInfo {
+  tables_found: string[];
+  record_counts: Record<string, number>;
+  branch_structure_found: boolean;
+  branch_note: string;
+  fields_per_table: Record<string, string[]>;
+}
+
+const BRANCH_TABLES = ["sys_hub_flow_logic", "sys_hub_flow_branch", "sys_flow_condition"];
+const INSPECT_TABLES = [
+  "sys_hub_action_instance", "sys_variable_value", "sys_hub_step_instance",
+  "sys_hub_flow_logic", "sys_hub_flow_branch", "sys_flow_condition",
+  "sys_hub_action_value", "sys_element_mapping",
+];
+
+function buildFlowEnrichment(
+  allRecords: Map<string, Element[]>,
+  existingPreview: Record<string, unknown>,
+): { enrichedSteps: Record<string, unknown>[]; debug: FlowDebugInfo } {
+  // ── Debug info ───────────────────────────────────────────────────────────────
+  const tables_found = Array.from(allRecords.keys()).sort();
+  const record_counts: Record<string, number> = {};
+  for (const [table, els] of Array.from(allRecords.entries())) {
+    record_counts[table] = els.length;
+  }
+
+  const fields_per_table: Record<string, string[]> = {};
+  for (const table of INSPECT_TABLES) {
+    const els = allRecords.get(table);
+    if (els && els.length > 0) {
+      fields_per_table[table] = Array.from(els[0].children)
+        .map((c) => c.tagName)
+        .filter(Boolean);
+    }
+  }
+
+  const hasBranchTables = BRANCH_TABLES.some((t) => allRecords.has(t));
+  const branchTablesList = BRANCH_TABLES
+    .filter((t) => allRecords.has(t))
+    .map((t) => `${t} (${record_counts[t]})`);
+  const branch_note = hasBranchTables
+    ? `Branch data found: ${branchTablesList.join(", ")}`
+    : "Branch structure not found in XML export. Branch detection is based on step label only.";
+
+  // ── Build params map from sys_variable_value ─────────────────────────────────
+  const varsByUuid = new Map<string, Array<{ name: string; value: string; display_value: string }>>();
+
+  for (const el of allRecords.get("sys_variable_value") ?? []) {
+    const uuid = el.querySelector("action_instance")?.textContent?.trim() ?? "";
+    if (!uuid) continue;
+    const name = el.querySelector("name")?.textContent?.trim() ?? "";
+    if (!name) continue;
+    const valueEl = el.querySelector("value");
+    const value = valueEl?.textContent?.trim() ?? "";
+    const display_value = valueEl?.getAttribute("display_value") ?? value;
+    if (!varsByUuid.has(uuid)) varsByUuid.set(uuid, []);
+    varsByUuid.get(uuid)!.push({ name, value, display_value });
+  }
+
+  // Also check sys_hub_action_value (alternative variable storage used by some action types)
+  for (const el of allRecords.get("sys_hub_action_value") ?? []) {
+    const uuid =
+      el.querySelector("action_instance")?.textContent?.trim() ||
+      el.querySelector("step_execution")?.textContent?.trim() || "";
+    if (!uuid) continue;
+    const nameEl = el.querySelector("action_input");
+    const name =
+      nameEl?.getAttribute("display_value") ||
+      nameEl?.textContent?.trim() ||
+      el.querySelector("name")?.textContent?.trim() || "";
+    if (!name) continue;
+    const valueEl = el.querySelector("value");
+    const value = valueEl?.textContent?.trim() ?? "";
+    const display_value = valueEl?.getAttribute("display_value") ?? value;
+    if (!varsByUuid.has(uuid)) varsByUuid.set(uuid, []);
+    const existing = varsByUuid.get(uuid)!;
+    if (!existing.some((p) => p.name === name)) {
+      existing.push({ name, value, display_value });
+    }
+  }
+
+  // ── Build enriched steps ──────────────────────────────────────────────────────
+  const existingSteps = (existingPreview.steps ?? []) as Record<string, unknown>[];
+  const actionInstances = allRecords.get("sys_hub_action_instance") ?? [];
+  let enrichedSteps: Record<string, unknown>[];
+
+  if (actionInstances.length > 0) {
+    const sorted = [...actionInstances].sort((a, b) => {
+      const oa = parseInt(a.querySelector("order")?.textContent?.trim() ?? "0") || 0;
+      const ob = parseInt(b.querySelector("order")?.textContent?.trim() ?? "0") || 0;
+      return oa - ob;
+    });
+
+    enrichedSteps = sorted.map((ai, idx) => {
+      const sysId = ai.querySelector("sys_id")?.textContent?.trim() ?? "";
+      const label =
+        ai.querySelector("label")?.textContent?.trim() ||
+        ai.querySelector("name")?.textContent?.trim() || "";
+      const atEl = ai.querySelector("action_type_definition");
+      const actionType = atEl?.getAttribute("display_value") || atEl?.textContent?.trim() || "";
+
+      // Merge with label_cache step for its outputs/inputs data
+      const lcStep =
+        existingSteps.find((s) => s.label === label) ||
+        existingSteps.find((s) => s.action === label) ||
+        existingSteps[idx];
+
+      const params = varsByUuid.get(sysId);
+      return {
+        ...(lcStep ?? {}),
+        order: idx + 1,
+        label: label || actionType || `Step ${idx + 1}`,
+        type: "action",
+        table: "sys_hub_action_instance",
+        sys_id: sysId,
+        action: actionType || label,
+        uuid: sysId,
+        branch_type: detectBranchType(label || actionType),
+        params: params && params.length > 0 ? params : (lcStep?.params ?? undefined),
+      };
+    });
+  } else {
+    // No action instances found — keep existing steps, enrich with params where possible
+    enrichedSteps = existingSteps.map((step) => {
+      const uuid = step.uuid as string | undefined;
+      const params = uuid ? varsByUuid.get(uuid) : undefined;
+      return params && params.length > 0 ? { ...step, params } : step;
+    });
+  }
+
+  return {
+    enrichedSteps,
+    debug: {
+      tables_found,
+      record_counts,
+      branch_structure_found: hasBranchTables,
+      branch_note,
+      fields_per_table,
+    },
+  };
+}
+
 function mapUpdateXmlToComponent(el: Element): ParsedComponent | null {
   const name = getDirectChildText(el, "name");
   const typeLabel = getDirectChildText(el, "type");
@@ -292,6 +869,21 @@ function mapUpdateXmlToComponent(el: Element): ParsedComponent | null {
               case "flow":
                 targetTable = (extracted.table as string) || null;
                 break;
+            }
+
+            // sys_hub_action_type_definition: the JS script lives in a sibling
+            // sys_variable_value in the same payload <record_update>, not as a
+            // direct child of the action element itself.
+            if (xmlTag === "sys_hub_action_type_definition") {
+              const scriptText = extractActionDefinitionScript(recordUpdate);
+              if (scriptText) config.script = scriptText;
+            }
+
+            // sys_hub_flow: extract full flow structure (trigger, inputs, stages,
+            // steps) for the FlowPreview component.
+            if (xmlTag === "sys_hub_flow") {
+              const preview = extractFlowPreview(recordUpdate);
+              if (preview) config.flow_preview = preview;
             }
           }
         }
@@ -390,12 +982,28 @@ export function parseServiceNowXml(xmlString: string, filename: string): XmlPars
   if (rootTag === "unload") {
     const updateXmls = doc.getElementsByTagName("sys_update_xml");
     if (updateXmls.length > 0) {
+      const allRecords = new Map<string, Element[]>();
       for (let i = 0; i < updateXmls.length; i++) {
-        const comp = mapUpdateXmlToComponent(updateXmls[i]);
+        const el = updateXmls[i];
+        const comp = mapUpdateXmlToComponent(el);
         if (comp) components.push(comp);
+        // Collect records from each payload for flow enrichment
+        const payloadText = getDirectChildText(el, "payload");
+        if (payloadText) collectPayloadRecords(payloadText, allRecords);
       }
       if (components.length === 0) {
         errors.push("Aucun composant ServiceNow reconnu dans ce fichier XML.");
+      }
+      // Enrich flow component with properly parsed records from all payloads
+      const flowCompUs = components.find((c) => c.xmlTag === "sys_hub_flow");
+      if (flowCompUs?.config?.flow_preview) {
+        const { enrichedSteps, debug } = buildFlowEnrichment(
+          allRecords,
+          flowCompUs.config.flow_preview as Record<string, unknown>,
+        );
+        const fp = flowCompUs.config.flow_preview as Record<string, unknown>;
+        if (enrichedSteps.length > 0) fp.steps = enrichedSteps;
+        fp.debug = debug;
       }
       return { components, errors, rawXml: xmlString, filename };
     }
@@ -407,6 +1015,36 @@ export function parseServiceNowXml(xmlString: string, filename: string): XmlPars
   for (let i = 0; i < rootEl.children.length; i++) {
     const comp = mapDirectXmlNode(rootEl.children[i]);
     if (comp) components.push(comp);
+  }
+
+  // ── sys_hub_action_type_definition (direct export): same script extraction
+  // as the update-set path — delegate to the shared helper.
+  if (
+    rootTag === "record_update" &&
+    rootEl.getAttribute("table") === "sys_hub_action_type_definition"
+  ) {
+    const actionDefComp = components.find(
+      (c) => c.xmlTag === "sys_hub_action_type_definition"
+    );
+    if (actionDefComp) {
+      const scriptText = extractActionDefinitionScript(rootEl);
+      if (scriptText) actionDefComp.config.script = scriptText;
+    }
+  }
+
+  // ── sys_hub_flow (direct export): extract full flow preview structure.
+  // rootEl is either <record_update table="sys_hub_flow"> or <unload> — both
+  // have sys_hub_flow and its siblings as descendants, so querySelector works.
+  const flowComp = components.find((c) => c.xmlTag === "sys_hub_flow");
+  if (flowComp) {
+    const preview = extractFlowPreview(rootEl);
+    if (preview) {
+      const allRecords = collectRecordsFromDirectExport(rootEl);
+      const { enrichedSteps, debug } = buildFlowEnrichment(allRecords, preview);
+      if (enrichedSteps.length > 0) preview.steps = enrichedSteps;
+      preview.debug = debug;
+      flowComp.config.flow_preview = preview;
+    }
   }
 
   if (components.length === 0) {

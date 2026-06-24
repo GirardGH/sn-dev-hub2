@@ -13,6 +13,7 @@ const CODE_LANGS: Record<string, string> = {
   condition: "javascript",
   filter_condition: "javascript",
   processing_script: "javascript",
+  source_script: "javascript",
   formula: "javascript",
   client_script: "javascript",
   css: "css",
