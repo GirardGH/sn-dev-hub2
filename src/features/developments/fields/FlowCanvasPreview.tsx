@@ -103,8 +103,9 @@ interface NodeData {
 
 const NODE_WIDTH = 280;
 const NODE_HEIGHT = 60;
-const V_GAP = 28;
+const V_GAP = 34;
 const V_STEP = NODE_HEIGHT + V_GAP;
+const H_STEP = NODE_WIDTH + 96;
 
 function FlowStepNode({ data }: NodeProps<NodeData>) {
   const cls = classifyAction(data.action, data.nodeType, data.branchType);
@@ -233,6 +234,12 @@ const nodeTypes: NodeTypes = { flowNode: FlowStepNode };
 
 interface RawNodeDef {
   id: string;
+  label?: string;
+  uuid?: string;
+  parentUiId?: string;
+  connectedTo?: string;
+  order?: number;
+  nodeType?: "trigger" | "step" | "end";
   branchType?: string | null;
 }
 
@@ -297,6 +304,110 @@ function buildEdgesWithBranches(rawNodes: RawNodeDef[]): Edge[] {
       style: { stroke: "#ef4444", strokeWidth: 1.5, strokeDasharray: "5,3" },
       markerEnd: { type: MarkerType.ArrowClosed, color: "#ef4444", width: 13, height: 13 },
     });
+  }
+
+  return edges;
+}
+
+function makeGraphEdge(
+  id: string,
+  source: string,
+  target: string,
+  label?: string,
+  tone: "default" | "true" | "false" = "default",
+): Edge {
+  const isFalse = tone === "false";
+  const isTrue = tone === "true";
+  const color = isTrue ? "#22c55e" : isFalse ? "#ef4444" : "#94a3b8";
+  return {
+    id,
+    source,
+    target,
+    type: "smoothstep",
+    label,
+    labelStyle: label ? { fontSize: 9.5, fontWeight: 700, fill: isFalse ? "#dc2626" : "#16a34a" } : undefined,
+    labelBgStyle: label ? { fill: isFalse ? "#fef2f2" : "#f0fdf4", rx: 3 } : undefined,
+    labelShowBg: !!label,
+    style: { stroke: color, strokeWidth: 1.5, strokeDasharray: isFalse ? "5,3" : undefined },
+    markerEnd: { type: MarkerType.ArrowClosed, color, width: 13, height: 13 },
+  };
+}
+
+function buildEdgesFromFlowRelations(rawNodes: RawNodeDef[]): Edge[] {
+  const edges: Edge[] = [];
+  const edgeKeys = new Set<string>();
+  const stepNodes = rawNodes.filter((node) => node.nodeType === "step");
+  const idByUuid = new Map<string, string>();
+
+  for (const node of stepNodes) {
+    if (node.uuid) idByUuid.set(node.uuid, node.id);
+  }
+
+  const addEdge = (
+    source: string,
+    target: string,
+    label?: string,
+    tone: "default" | "true" | "false" = "default",
+  ) => {
+    if (source === target) return;
+    const key = `${source}->${target}:${label ?? ""}`;
+    if (edgeKeys.has(key)) return;
+    edgeKeys.add(key);
+    edges.push(makeGraphEdge(`e-${edges.length}-${source}-${target}`, source, target, label, tone));
+  };
+
+  const roots = stepNodes
+    .filter((node) => !node.parentUiId && !node.connectedTo)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+  if (roots[0]) addEdge("trigger", roots[0].id);
+  for (let i = 0; i < roots.length - 1; i++) {
+    const from = roots[i];
+    const to = roots[i + 1];
+    if (from.branchType === "if" || from.branchType === "else_if") continue;
+    addEdge(from.id, to.id);
+  }
+
+  const childrenByParent = new Map<string, RawNodeDef[]>();
+  for (const node of stepNodes) {
+    if (!node.parentUiId || node.connectedTo) continue;
+    const parentId = idByUuid.get(node.parentUiId);
+    if (!parentId) continue;
+    if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, []);
+    childrenByParent.get(parentId)!.push(node);
+  }
+
+  for (const [parentId, children] of Array.from(childrenByParent.entries())) {
+    children.sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    const parent = rawNodes.find((node) => node.id === parentId);
+    if (children[0]) {
+      const isCondition = parent?.branchType === "if" || parent?.branchType === "else_if";
+      addEdge(parentId, children[0].id, isCondition ? "true" : undefined, isCondition ? "true" : "default");
+    }
+    for (let i = 0; i < children.length - 1; i++) {
+      const from = children[i];
+      const to = children[i + 1];
+      if (from.branchType === "if" || from.branchType === "else_if") continue;
+      addEdge(from.id, to.id);
+    }
+  }
+
+  for (const node of stepNodes) {
+    if (!node.connectedTo) continue;
+    const sourceId = idByUuid.get(node.connectedTo);
+    if (!sourceId) continue;
+    addEdge(sourceId, node.id, node.branchType === "else" ? "else" : "false", "false");
+  }
+
+  const outgoing = new Set(edges.map((edge) => edge.source));
+  const explicitEndNodes = stepNodes.filter(
+    (node) => String(node.branchType ?? "") === "end" || node.label?.toLowerCase() === "end",
+  );
+  const terminalNodes = explicitEndNodes.length > 0
+    ? explicitEndNodes
+    : stepNodes.filter((node) => !outgoing.has(node.id));
+  for (const node of terminalNodes) {
+    addEdge(node.id, "end");
   }
 
   return edges;
@@ -477,6 +588,15 @@ function StepDetailPanel({ content, onClose }: { content: PanelContent; onClose:
             {content.step.branch_type && (
               <DataRow label="Branch Type" value={String(content.step.branch_type).toUpperCase()} />
             )}
+            {content.step.condition && (
+              <DataRow label="Condition" value={content.step.condition} />
+            )}
+            {content.step.parent_ui_id && (
+              <DataRow label="Parent UI ID" value={content.step.parent_ui_id} mono />
+            )}
+            {content.step.connected_to && (
+              <DataRow label="Connected To" value={content.step.connected_to} mono />
+            )}
             <DataRow label="Instance UUID" value={content.step.uuid} mono />
             <TypeSpecificSummary step={content.step} />
           </>
@@ -607,7 +727,11 @@ export function FlowCanvasPreview({ data }: Props) {
     type RawNode = {
       id: string;
       label: string;
+      action: string;
       order?: number;
+      uuid?: string;
+      parentUiId?: string;
+      connectedTo?: string;
       nodeType: "trigger" | "step" | "end";
       branchType?: string | null;
     };
@@ -616,6 +740,7 @@ export function FlowCanvasPreview({ data }: Props) {
     raw.push({
       id: "trigger",
       label: data.trigger?.definition || data.trigger?.name || "Trigger",
+      action: data.trigger?.definition || data.trigger?.name || "Trigger",
       nodeType: "trigger",
     });
 
@@ -623,21 +748,53 @@ export function FlowCanvasPreview({ data }: Props) {
       raw.push({
         id: `step-${i}`,
         label: String(step.label || step.action || `Step ${i + 1}`),
+        action: String(step.action || step.label || `Step ${i + 1}`),
         order: step.order as number | undefined,
+        uuid: step.uuid || step.sys_id || undefined,
+        parentUiId: step.parent_ui_id,
+        connectedTo: step.connected_to,
         nodeType: "step",
         branchType: (step.branch_type as string | null) ?? null,
       });
     });
 
-    raw.push({ id: "end", label: "End", nodeType: "end" });
+    raw.push({ id: "end", label: "End", action: "End", nodeType: "end" });
+
+    const stepNodes = raw.filter((node) => node.nodeType === "step");
+    const byUuid = new Map<string, RawNode>();
+    for (const node of stepNodes) {
+      if (node.uuid) byUuid.set(node.uuid, node);
+    }
+
+    const depthMemo = new Map<string, number>();
+    const getDepth = (node: RawNode): number => {
+      if (node.nodeType !== "step") return 0;
+      if (depthMemo.has(node.id)) return depthMemo.get(node.id)!;
+      let depth = 0;
+      if (node.parentUiId) {
+        const parent = byUuid.get(node.parentUiId);
+        if (parent) depth = getDepth(parent) + 1;
+      } else if (node.connectedTo) {
+        const source = byUuid.get(node.connectedTo);
+        if (source) depth = getDepth(source);
+      }
+      depthMemo.set(node.id, depth);
+      return depth;
+    };
+
+    const maxDepth = stepNodes.reduce((max, node) => Math.max(max, getDepth(node)), 0);
+    const maxOrder = stepNodes.reduce((max, node) => Math.max(max, node.order ?? 0), 0);
 
     const builtNodes: Node<NodeData>[] = raw.map((r, i) => ({
       id: r.id,
       type: "flowNode",
-      position: { x: 0, y: i * V_STEP },
+      position: {
+        x: r.nodeType === "end" ? Math.max(0, maxDepth) * H_STEP : getDepth(r) * H_STEP,
+        y: r.nodeType === "trigger" ? 0 : r.nodeType === "end" ? (maxOrder + 1) * V_STEP : ((r.order ?? i) * V_STEP),
+      },
       data: {
         label: r.label,
-        action: r.label,
+        action: r.action,
         order: r.nodeType === "step" ? r.order : undefined,
         nodeType: r.nodeType,
         branchType: r.branchType,
@@ -648,9 +805,12 @@ export function FlowCanvasPreview({ data }: Props) {
       selectable: false,
     }));
 
-    const builtEdges = buildEdgesWithBranches(raw);
+    const hasStructuralLinks = raw.some((node) => node.parentUiId || node.connectedTo);
+    const builtEdges = hasStructuralLinks
+      ? buildEdgesFromFlowRelations(raw)
+      : buildEdgesWithBranches(raw);
 
-    const totalContent = raw.length * V_STEP + 60;
+    const totalContent = (maxOrder + 2) * V_STEP + 60;
     return {
       nodes: builtNodes,
       edges: builtEdges,

@@ -117,9 +117,9 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
     }
 
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       const xmlString = e.target?.result as string;
-      const result = parseServiceNowXml(xmlString, file.name);
+      const result = await parseServiceNowXml(xmlString, file.name);
       setParseResult(result);
       setComponents(result.components);
     };

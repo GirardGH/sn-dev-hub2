@@ -68,6 +68,191 @@ function getDirectChildText(parent: Element, tagName: string): string {
   return "";
 }
 
+function getDirectChild(parent: Element, tagName: string): Element | null {
+  const lower = tagName.toLowerCase();
+  for (let i = 0; i < parent.children.length; i++) {
+    if (parent.children[i].tagName.toLowerCase() === lower) {
+      return parent.children[i];
+    }
+  }
+  return null;
+}
+
+function getDirectChildDisplayOrText(parent: Element, tagName: string): string {
+  const child = getDirectChild(parent, tagName);
+  return child?.getAttribute("display_value") || child?.textContent?.trim() || "";
+}
+
+async function decodeGzipBase64(value: string): Promise<string> {
+  const compressed = value.trim();
+  if (!compressed || typeof DecompressionStream === "undefined") return "";
+  try {
+    const binary = atob(compressed);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+    return await new Response(stream).text();
+  } catch {
+    return "";
+  }
+}
+
+async function parseCompressedJson(value: string): Promise<unknown | null> {
+  const decoded = await decodeGzipBase64(value);
+  if (!decoded) return null;
+  try {
+    return JSON.parse(decoded) as unknown;
+  } catch {
+    return null;
+  }
+}
+
+type FlowDecodedInput = {
+  name?: string;
+  label?: string;
+  value?: unknown;
+  displayValue?: unknown;
+  internalType?: string;
+  type?: string;
+  parameter?: {
+    label?: string;
+    name?: string;
+    type?: string;
+    typeLabel?: string;
+    type_label?: string;
+    reference?: string;
+    reference_display?: string;
+    table?: string;
+  };
+  children?: FlowDecodedInput[];
+};
+
+function stringifyFlowValue(value: unknown): string {
+  if (value === undefined || value === null) return "";
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
+function extractDecodedInputs(decoded: unknown): FlowDecodedInput[] {
+  if (Array.isArray(decoded)) return decoded as FlowDecodedInput[];
+  if (decoded && typeof decoded === "object" && Array.isArray((decoded as { inputs?: unknown }).inputs)) {
+    return (decoded as { inputs: FlowDecodedInput[] }).inputs;
+  }
+  return [];
+}
+
+function decodedInputsToParams(inputs: FlowDecodedInput[]): Array<Record<string, string>> {
+  const params: Array<Record<string, string>> = [];
+  const addParam = (param: Record<string, string>) => {
+    params.push(param);
+  };
+  const visit = (input: FlowDecodedInput, parentLabel?: string) => {
+    const label = input.parameter?.label || input.label || input.name || "";
+    const name = input.name || input.parameter?.name || label;
+    if (name || label) {
+      const value = stringifyFlowValue(input.value);
+      const displayValue = stringifyFlowValue(input.displayValue) || value;
+      addParam({
+        name,
+        label,
+        value,
+        display_value: displayValue,
+        type: input.parameter?.typeLabel || input.parameter?.type_label || input.internalType || input.parameter?.type || input.type || "",
+        reference: input.parameter?.reference || "",
+        reference_display: input.parameter?.reference_display || "",
+        table: input.parameter?.table || "",
+        parent: parentLabel || "",
+      });
+    }
+    for (const child of input.children ?? []) visit(child, label || parentLabel);
+  };
+  for (const input of inputs) visit(input);
+
+  const byName = new Map(params.map((param) => [param.name, param]));
+  const addAlias = (from: string, to: string, label: string) => {
+    const source = byName.get(from);
+    if (!source || byName.has(to)) return;
+    const alias = { ...source, name: to, label };
+    addParam(alias);
+    byName.set(to, alias);
+  };
+  addAlias("ah_table_name", "table", "Table");
+  addAlias("ah_short_description", "short_description", "Short Description");
+  addAlias("ah_requested_item", "requested_item", "Requested Item");
+  addAlias("template_catalog_item", "template", "Template");
+  addAlias("catalog_variables", "variables", "Variables");
+  addAlias("approval_conditions", "approvers", "Approvers / Rules");
+
+  const fields = byName.get("ah_fields");
+  if (fields?.value) {
+    for (const part of fields.value.split("^")) {
+      const eq = part.indexOf("=");
+      if (eq <= 0) continue;
+      const fieldName = part.slice(0, eq).trim();
+      const fieldValue = part.slice(eq + 1).trim();
+      if (!fieldName || byName.has(fieldName)) continue;
+      const fieldParam = {
+        name: fieldName,
+        label: fieldName.replace(/_/g, " "),
+        value: fieldValue,
+        display_value: fieldValue,
+        type: "field",
+        reference: "",
+        reference_display: "",
+        table: "",
+        parent: fields.label || fields.name,
+      };
+      addParam(fieldParam);
+      byName.set(fieldName, fieldParam);
+    }
+  }
+
+  return params;
+}
+
+function paramsToDataPillInputs(params: Array<Record<string, string>>): Record<string, unknown>[] {
+  const pills: Record<string, unknown>[] = [];
+  const seen = new Set<string>();
+  for (const param of params) {
+    const text = `${param.value} ${param.display_value}`;
+    const pillRegex = /\{\{([^}]+)\}\}/g;
+    let match: RegExpExecArray | null;
+    while ((match = pillRegex.exec(text)) !== null) {
+      const pill = match[1]?.trim();
+      if (!pill || seen.has(`${param.name}:${pill}`)) continue;
+      seen.add(`${param.name}:${pill}`);
+      pills.push({
+        source_order: 0,
+        source_label: "Data pill",
+        field: pill,
+        usages: [param.label || param.name],
+      });
+    }
+  }
+  return pills;
+}
+
+function getFlowRecordSysId(el: Element): string {
+  return getDirectChildText(el, "flow");
+}
+
+function belongsToFlow(el: Element, flowSysId: string): boolean {
+  if (!flowSysId) return true;
+  const table = el.tagName.toLowerCase();
+  if (table === "sys_hub_flow") return getDirectChildText(el, "sys_id") === flowSysId;
+  const flowRef = getFlowRecordSysId(el);
+  if (flowRef) return flowRef === flowSysId;
+  const modelTable = getDirectChildText(el, "model_table");
+  const modelId = getDirectChildText(el, "model_id") || getDirectChildText(el, "model");
+  if (modelTable === "sys_hub_flow" && modelId) return modelId === flowSysId;
+  return true;
+}
+
 function extractConfigFromXmlNode(el: Element, devType: string): Record<string, unknown> {
   const config: Record<string, unknown> = {};
 
@@ -675,6 +860,8 @@ function collectRecordsFromDirectExport(rootEl: Element): Map<string, Element[]>
     "sys_hub_action_value", "sys_element_mapping", "sys_hub_flow",
     "sys_hub_trigger_instance_v2", "sys_flow_catalog_trigger",
     "sys_hub_action_type_definition", "sys_hub_flow_input",
+    "sys_hub_action_instance_v2", "sys_hub_flow_logic_instance_v2",
+    "sys_hub_sub_flow_instance_v2",
   ];
   for (const table of tables) {
     const els = rootEl.querySelectorAll(table);
@@ -691,27 +878,36 @@ interface FlowDebugInfo {
   fields_per_table: Record<string, string[]>;
 }
 
-const BRANCH_TABLES = ["sys_hub_flow_logic", "sys_hub_flow_branch", "sys_flow_condition"];
+const BRANCH_TABLES = ["sys_hub_flow_logic", "sys_hub_flow_branch", "sys_flow_condition", "sys_hub_flow_logic_instance_v2"];
 const INSPECT_TABLES = [
   "sys_hub_action_instance", "sys_variable_value", "sys_hub_step_instance",
   "sys_hub_flow_logic", "sys_hub_flow_branch", "sys_flow_condition",
   "sys_hub_action_value", "sys_element_mapping",
+  "sys_hub_action_instance_v2", "sys_hub_flow_logic_instance_v2",
+  "sys_hub_sub_flow_instance_v2", "sys_hub_trigger_instance_v2",
 ];
 
-function buildFlowEnrichment(
+async function buildFlowEnrichment(
   allRecords: Map<string, Element[]>,
   existingPreview: Record<string, unknown>,
-): { enrichedSteps: Record<string, unknown>[]; debug: FlowDebugInfo } {
-  // ── Debug info ───────────────────────────────────────────────────────────────
-  const tables_found = Array.from(allRecords.keys()).sort();
-  const record_counts: Record<string, number> = {};
+): Promise<{ enrichedSteps: Record<string, unknown>[]; debug: FlowDebugInfo }> {
+  const flowSysId = String(existingPreview.sys_id ?? "");
+  const scopedRecords = new Map<string, Element[]>();
   for (const [table, els] of Array.from(allRecords.entries())) {
+    const scoped = els.filter((el) => belongsToFlow(el, flowSysId));
+    if (scoped.length > 0) scopedRecords.set(table, scoped);
+  }
+
+  // ── Debug info ───────────────────────────────────────────────────────────────
+  const tables_found = Array.from(scopedRecords.keys()).sort();
+  const record_counts: Record<string, number> = {};
+  for (const [table, els] of Array.from(scopedRecords.entries())) {
     record_counts[table] = els.length;
   }
 
   const fields_per_table: Record<string, string[]> = {};
   for (const table of INSPECT_TABLES) {
-    const els = allRecords.get(table);
+    const els = scopedRecords.get(table);
     if (els && els.length > 0) {
       fields_per_table[table] = Array.from(els[0].children)
         .map((c) => c.tagName)
@@ -719,9 +915,9 @@ function buildFlowEnrichment(
     }
   }
 
-  const hasBranchTables = BRANCH_TABLES.some((t) => allRecords.has(t));
+  const hasBranchTables = BRANCH_TABLES.some((t) => scopedRecords.has(t));
   const branchTablesList = BRANCH_TABLES
-    .filter((t) => allRecords.has(t))
+    .filter((t) => scopedRecords.has(t))
     .map((t) => `${t} (${record_counts[t]})`);
   const branch_note = hasBranchTables
     ? `Branch data found: ${branchTablesList.join(", ")}`
@@ -730,7 +926,7 @@ function buildFlowEnrichment(
   // ── Build params map from sys_variable_value ─────────────────────────────────
   const varsByUuid = new Map<string, Array<{ name: string; value: string; display_value: string }>>();
 
-  for (const el of allRecords.get("sys_variable_value") ?? []) {
+  for (const el of scopedRecords.get("sys_variable_value") ?? []) {
     const uuid = el.querySelector("action_instance")?.textContent?.trim() ?? "";
     if (!uuid) continue;
     const name = el.querySelector("name")?.textContent?.trim() ?? "";
@@ -743,7 +939,7 @@ function buildFlowEnrichment(
   }
 
   // Also check sys_hub_action_value (alternative variable storage used by some action types)
-  for (const el of allRecords.get("sys_hub_action_value") ?? []) {
+  for (const el of scopedRecords.get("sys_hub_action_value") ?? []) {
     const uuid =
       el.querySelector("action_instance")?.textContent?.trim() ||
       el.querySelector("step_execution")?.textContent?.trim() || "";
@@ -766,10 +962,80 @@ function buildFlowEnrichment(
 
   // ── Build enriched steps ──────────────────────────────────────────────────────
   const existingSteps = (existingPreview.steps ?? []) as Record<string, unknown>[];
-  const actionInstances = allRecords.get("sys_hub_action_instance") ?? [];
+  const actionInstancesV2 = scopedRecords.get("sys_hub_action_instance_v2") ?? [];
+  const logicInstancesV2 = scopedRecords.get("sys_hub_flow_logic_instance_v2") ?? [];
+  const subflowInstancesV2 = scopedRecords.get("sys_hub_sub_flow_instance_v2") ?? [];
+  const actionInstances = scopedRecords.get("sys_hub_action_instance") ?? [];
   let enrichedSteps: Record<string, unknown>[];
 
-  if (actionInstances.length > 0) {
+  if (actionInstancesV2.length > 0 || logicInstancesV2.length > 0 || subflowInstancesV2.length > 0) {
+    const v2Items: Array<{ el: Element; kind: "action" | "logic" | "subflow" }> = [
+      ...actionInstancesV2.map((el) => ({ el, kind: "action" as const })),
+      ...logicInstancesV2.map((el) => ({ el, kind: "logic" as const })),
+      ...subflowInstancesV2.map((el) => ({ el, kind: "subflow" as const })),
+    ]
+      .filter((item) => item.el.getAttribute("action") !== "delete_multiple")
+      .sort((a, b) => {
+        const oa = parseInt(getDirectChildText(a.el, "order") || "0") || 0;
+        const ob = parseInt(getDirectChildText(b.el, "order") || "0") || 0;
+        if (oa !== ob) return oa - ob;
+        return getDirectChildText(a.el, "sys_id").localeCompare(getDirectChildText(b.el, "sys_id"));
+      });
+
+    enrichedSteps = [];
+    for (const item of v2Items) {
+      const el = item.el;
+      const order = parseInt(getDirectChildText(el, "order") || "0") || enrichedSteps.length + 1;
+      const sysId = getDirectChildText(el, "sys_id");
+      const uiId = getDirectChildText(el, "ui_id");
+      const parentUiId = getDirectChildText(el, "parent_ui_id");
+      const connectedTo = getDirectChildText(el, "connected_to");
+      const comment = getDirectChildText(el, "comment");
+      const actionType =
+        item.kind === "action"
+          ? getDirectChildDisplayOrText(el, "action_type")
+          : item.kind === "subflow"
+            ? getDirectChildDisplayOrText(el, "subflow")
+            : getDirectChildDisplayOrText(el, "logic_definition");
+      const decoded = await parseCompressedJson(
+        getDirectChildText(el, item.kind === "subflow" ? "subflow_inputs" : "values")
+      );
+      const decodedParams = decodedInputsToParams(extractDecodedInputs(decoded));
+      const oldParams = varsByUuid.get(sysId) ?? [];
+      const params = decodedParams.length > 0 ? decodedParams : oldParams;
+      const condition = params.find((p) => p.name === "condition");
+      const conditionName = params.find((p) => p.name === "condition_name");
+      const label =
+        conditionName?.display_value ||
+        comment ||
+        actionType ||
+        (item.kind === "logic" ? "Flow logic" : item.kind === "subflow" ? "Subflow" : "Action");
+      const actionLower = actionType.toLowerCase();
+      const branchType =
+        actionLower === "if" ? "if" :
+        actionLower === "else if" ? "else_if" :
+        actionLower === "else" ? "else" :
+        detectBranchType(label || actionType);
+      const dataPillInputs = paramsToDataPillInputs(params as Array<Record<string, string>>);
+
+      enrichedSteps.push({
+        order,
+        label,
+        type: item.kind,
+        table: el.tagName.toLowerCase(),
+        sys_id: sysId,
+        action: actionType || label,
+        uuid: uiId || sysId || undefined,
+        parent_ui_id: parentUiId || undefined,
+        connected_to: connectedTo || undefined,
+        branch_type: branchType,
+        condition: condition?.display_value || condition?.value || undefined,
+        comment: comment || undefined,
+        params: params.length > 0 ? params : undefined,
+        inputs: dataPillInputs.length > 0 ? dataPillInputs : undefined,
+      });
+    }
+  } else if (actionInstances.length > 0) {
     const sorted = [...actionInstances].sort((a, b) => {
       const oa = parseInt(a.querySelector("order")?.textContent?.trim() ?? "0") || 0;
       const ob = parseInt(b.querySelector("order")?.textContent?.trim() ?? "0") || 0;
@@ -946,7 +1212,7 @@ function mapDirectXmlNode(el: Element): ParsedComponent | null {
   };
 }
 
-export function parseServiceNowXml(xmlString: string, filename: string): XmlParseResult {
+export async function parseServiceNowXml(xmlString: string, filename: string): Promise<XmlParseResult> {
   const errors: string[] = [];
   const components: ParsedComponent[] = [];
 
@@ -994,14 +1260,10 @@ export function parseServiceNowXml(xmlString: string, filename: string): XmlPars
       if (components.length === 0) {
         errors.push("Aucun composant ServiceNow reconnu dans ce fichier XML.");
       }
-      // Enrich flow component with properly parsed records from all payloads
-      const flowCompUs = components.find((c) => c.xmlTag === "sys_hub_flow");
-      if (flowCompUs?.config?.flow_preview) {
-        const { enrichedSteps, debug } = buildFlowEnrichment(
-          allRecords,
-          flowCompUs.config.flow_preview as Record<string, unknown>,
-        );
-        const fp = flowCompUs.config.flow_preview as Record<string, unknown>;
+      // Enrich each flow component with records scoped to its sys_id.
+      for (const flowComp of components.filter((c) => c.xmlTag === "sys_hub_flow" && c.config?.flow_preview)) {
+        const fp = flowComp.config.flow_preview as Record<string, unknown>;
+        const { enrichedSteps, debug } = await buildFlowEnrichment(allRecords, fp);
         if (enrichedSteps.length > 0) fp.steps = enrichedSteps;
         fp.debug = debug;
       }
@@ -1040,7 +1302,7 @@ export function parseServiceNowXml(xmlString: string, filename: string): XmlPars
     const preview = extractFlowPreview(rootEl);
     if (preview) {
       const allRecords = collectRecordsFromDirectExport(rootEl);
-      const { enrichedSteps, debug } = buildFlowEnrichment(allRecords, preview);
+      const { enrichedSteps, debug } = await buildFlowEnrichment(allRecords, preview);
       if (enrichedSteps.length > 0) preview.steps = enrichedSteps;
       preview.debug = debug;
       flowComp.config.flow_preview = preview;

@@ -258,7 +258,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
   async function handleReanalyze() {
     setReanalyzing(true);
     try {
-      const result = parseServiceNowXml(xmlImport.raw_xml, xmlImport.filename);
+      const result = await parseServiceNowXml(xmlImport.raw_xml, xmlImport.filename);
       const newSummary = analyzeParsedComponents(result.components, result.errors);
       await updateXmlImportAnalysis(
         xmlImport.id,

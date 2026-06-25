@@ -61,6 +61,10 @@ export interface FlowPreviewStep {
   action: string;
   stage?: string;
   uuid?: string;
+  parent_ui_id?: string;
+  connected_to?: string;
+  condition?: string;
+  comment?: string;
   outputs?: FlowPreviewStepOutput[];
   inputs?: FlowPreviewStepInput[];
   params?: FlowPreviewStepParam[];
