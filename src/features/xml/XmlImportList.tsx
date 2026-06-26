@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { FileCode2 } from "lucide-react";
 import { toast } from "sonner";
@@ -8,11 +9,19 @@ import { StatusBadge } from "@/components/ui/Badge";
 import { formatDate } from "@/lib/utils";
 import { deleteXmlImports } from "./xml.actions";
 import type { XmlImport } from "./xml.types";
+import type { FilterField } from "@/components/servicenow/FilterBuilder";
 
 type XmlImportWithRelations = XmlImport & {
   clients?: { id: string; name: string } | null;
   stories?: { id: string; title: string } | null;
 };
+
+const filterFields: FilterField[] = [
+  { key: "filename", label: "Filename" },
+  { key: "created_developments_count", label: "Developments Created" },
+  { key: "status", label: "Status" },
+  { key: "created_at", label: "Imported" },
+];
 
 const defaultColumns: ListColumn<XmlImportWithRelations>[] = [
   { key: "filename", label: "Filename", visible: true, order: 1, render: (row) => (
@@ -34,6 +43,28 @@ interface Props {
 
 export function XmlImportListClient({ imports }: Props) {
   const router = useRouter();
+  const clientOptions = useMemo(() => {
+    const clients = new Map<string, string>();
+    for (const xmlImport of imports) {
+      const label = xmlImport.clients?.name;
+      if (label) clients.set(label, label);
+    }
+    return Array.from(clients, ([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [imports]);
+  const storyOptions = useMemo(() => {
+    const stories = new Map<string, string>();
+    for (const xmlImport of imports) {
+      const label = xmlImport.stories?.title;
+      if (label) stories.set(label, label);
+    }
+    return Array.from(stories, ([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [imports]);
+  const xmlImportFilterFields = useMemo<FilterField[]>(() => [
+    filterFields[0],
+    { key: "client", label: "Client", type: "select", options: clientOptions, getValue: (row) => (row as XmlImportWithRelations).clients?.name ?? "" },
+    { key: "story", label: "Story", type: "select", options: storyOptions, getValue: (row) => (row as XmlImportWithRelations).stories?.title ?? "" },
+    ...filterFields.slice(1),
+  ], [clientOptions, storyOptions]);
 
   async function handleDeleteSelected(ids: string[]) {
     await deleteXmlImports(ids);
@@ -54,6 +85,7 @@ export function XmlImportListClient({ imports }: Props) {
         title="XML Imports"
         data={imports}
         columns={defaultColumns}
+        filterFields={xmlImportFilterFields}
         onRowClick={(row) => router.push(`/xml-imports/${row.id}`)}
         onNew={() => router.push("/xml-imports/new")}
         onRefresh={() => router.refresh()}

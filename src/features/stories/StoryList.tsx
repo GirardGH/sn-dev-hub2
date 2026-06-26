@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { BookOpen } from "lucide-react";
 import { toast } from "sonner";
@@ -15,8 +16,8 @@ interface StoryWithClient extends Omit<Story, "clients"> {
 }
 
 const filterFields: FilterField[] = [
-  { key: "title", label: "Title" },
   { key: "reference", label: "Reference" },
+  { key: "title", label: "Title" },
   { key: "status", label: "Status", type: "select", options: [
     { value: "draft", label: "Draft" },
     { value: "in_progress", label: "In Progress" },
@@ -30,6 +31,8 @@ const filterFields: FilterField[] = [
     { value: "high", label: "High" },
     { value: "critical", label: "Critical" },
   ]},
+  { key: "estimated_uo", label: "UO" },
+  { key: "created_at", label: "Created" },
 ];
 
 function buildColumns(onClientClick?: (clientId: string) => void): ListColumn<StoryWithClient>[] {
@@ -50,7 +53,7 @@ function buildColumns(onClientClick?: (clientId: string) => void): ListColumn<St
           {row.clients.name}
         </button>
       ) : "—"
-    )},
+    ), getValue: (row) => row.clients?.name ?? ""},
     { key: "status", label: "Status", visible: true, order: 4, render: (row) => <StatusBadge status={row.status} /> },
     { key: "priority", label: "Priority", visible: true, order: 5, render: (row) => row.priority ? <StatusBadge status={row.priority} /> : null },
     { key: "estimated_uo", label: "UO", visible: true, order: 6 },
@@ -66,6 +69,19 @@ export function StoryListClient({ stories }: Props) {
   const router = useRouter();
 
   const columns = buildColumns((clientId) => router.push(`/clients/${clientId}`));
+  const clientOptions = useMemo(() => {
+    const clients = new Map<string, string>();
+    for (const story of stories) {
+      const label = story.clients?.name;
+      if (label) clients.set(label, label);
+    }
+    return Array.from(clients, ([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [stories]);
+  const storyFilterFields = useMemo<FilterField[]>(() => [
+    ...filterFields.slice(0, 2),
+    { key: "client", label: "Client", type: "select", options: clientOptions, getValue: (row) => (row as StoryWithClient).clients?.name ?? "" },
+    ...filterFields.slice(2),
+  ], [clientOptions]);
 
   async function handleDeleteSelected(ids: string[]) {
     await deleteStories(ids);
@@ -87,7 +103,7 @@ export function StoryListClient({ stories }: Props) {
         title="Stories"
         data={stories}
         columns={columns}
-        filterFields={filterFields}
+        filterFields={storyFilterFields}
         onRowClick={(row) => {
           const clientId = row.client_id || row.clients?.id;
           if (clientId) router.push(`/clients/${clientId}/stories/${row.id}`);

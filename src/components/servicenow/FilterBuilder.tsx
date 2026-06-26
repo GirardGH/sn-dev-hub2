@@ -11,6 +11,7 @@ export interface FilterCondition {
   field: string;
   operator: string;
   value: string;
+  connector?: "and" | "or";
 }
 
 export interface FilterField {
@@ -18,6 +19,7 @@ export interface FilterField {
   label: string;
   type?: "text" | "select";
   options?: { value: string; label: string }[];
+  getValue?: (row: unknown) => unknown;
 }
 
 const OPERATORS = [
@@ -48,6 +50,7 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
         field: fields[0]?.key ?? "",
         operator: "is",
         value: "",
+        connector: conditions.length === 0 ? "and" : "and",
       },
     ]);
   }
@@ -100,9 +103,21 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
 
               return (
                 <div key={cond.id} className="flex items-center gap-2">
-                  <span className="text-[11px] font-semibold text-sn-text-muted w-10 text-right flex-shrink-0 uppercase tracking-wide">
-                    {idx === 0 ? "Where" : "AND"}
-                  </span>
+                  {idx === 0 ? (
+                    <span className="text-[11px] font-semibold text-sn-text-muted w-10 text-right flex-shrink-0 uppercase tracking-wide">
+                      Where
+                    </span>
+                  ) : (
+                    <Select
+                      options={[
+                        { value: "and", label: "AND" },
+                        { value: "or", label: "OR" },
+                      ]}
+                      value={cond.connector ?? "and"}
+                      onChange={(e) => updateCondition(cond.id, "connector", e.target.value)}
+                      className="w-20"
+                    />
+                  )}
                   <Select
                     options={fields.map((f) => ({ value: f.key, label: f.label }))}
                     value={cond.field}

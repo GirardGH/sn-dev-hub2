@@ -13,12 +13,19 @@ import { deleteClients } from "./client.actions";
 const filterFields: FilterField[] = [
   { key: "name", label: "Name" },
   { key: "code", label: "Code" },
-  { key: "environment", label: "Environment" },
+  { key: "environment", label: "Environment", type: "select", options: [
+    { value: "production", label: "Production" },
+    { value: "staging", label: "Staging" },
+    { value: "development", label: "Development" },
+    { value: "sandbox", label: "Sandbox" },
+  ]},
+  { key: "instance_url", label: "Instance URL" },
   { key: "status", label: "Status", type: "select", options: [
     { value: "active", label: "Active" },
     { value: "inactive", label: "Inactive" },
     { value: "archived", label: "Archived" },
   ]},
+  { key: "created_at", label: "Created" },
 ];
 
 const defaultColumns: ListColumn<Client>[] = [

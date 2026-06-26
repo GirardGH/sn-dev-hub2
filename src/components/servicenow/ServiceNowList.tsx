@@ -23,7 +23,12 @@ import { cn } from "@/lib/utils";
 export interface ListColumn<T> extends ColumnDef {
   render?: (row: T) => React.ReactNode;
   sortable?: boolean;
+  getValue?: (row: T) => unknown;
 }
+
+type ListFilterField<T> = FilterField & {
+  getValue?: (row: T) => unknown;
+};
 
 interface ServiceNowListProps<T extends { id: string }> {
   title: string;
@@ -34,7 +39,7 @@ interface ServiceNowListProps<T extends { id: string }> {
   onNew?: () => void;
   onRefresh?: () => void;
   loading?: boolean;
-  filterFields?: FilterField[];
+  filterFields?: ListFilterField<T>[];
   newLabel?: string;
   extraActions?: React.ReactNode;
   emptyMessage?: string;
@@ -75,10 +80,25 @@ export function ServiceNowList<T extends { id: string }>({
     [columns]
   );
 
+  const getRawValue = useCallback((row: T, key: string): unknown => {
+    return (row as Record<string, unknown>)[key];
+  }, []);
+
+  const getColumnValue = useCallback((row: T, key: string): unknown => {
+    const column = columns.find((col) => col.key === key);
+    return column?.getValue ? column.getValue(row) : getRawValue(row, key);
+  }, [columns, getRawValue]);
+
+  const getFilterValue = useCallback((row: T, field: ListFilterField<T>): unknown => {
+    return field.getValue ? field.getValue(row) : getColumnValue(row, field.key);
+  }, [getColumnValue]);
+
   const applyFilter = useCallback(
     (row: T, conditions: FilterCondition[]): boolean => {
-      return conditions.every((cond) => {
-        const cellValue = String((row as Record<string, unknown>)[cond.field] ?? "").toLowerCase();
+      const matchesCondition = (cond: FilterCondition): boolean => {
+        const fieldDef = filterFields.find((field) => field.key === cond.field);
+        const rawValue = fieldDef ? getFilterValue(row, fieldDef) : getColumnValue(row, cond.field);
+        const cellValue = String(rawValue ?? "").toLowerCase();
         const filterValue = cond.value.toLowerCase();
         switch (cond.operator) {
           case "is": return cellValue === filterValue;
@@ -89,9 +109,15 @@ export function ServiceNowList<T extends { id: string }>({
           case "is_not_empty": return cellValue !== "";
           default: return true;
         }
-      });
+      };
+
+      return conditions.reduce((result, cond, index) => {
+        const matched = matchesCondition(cond);
+        if (index === 0) return matched;
+        return (cond.connector ?? "and") === "or" ? result || matched : result && matched;
+      }, true);
     },
-    []
+    [filterFields, getColumnValue, getFilterValue]
   );
 
   const filteredData = useMemo(() => {
@@ -99,7 +125,8 @@ export function ServiceNowList<T extends { id: string }>({
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter((row) =>
-        Object.values(row).some((v) => String(v ?? "").toLowerCase().includes(q))
+        [...visibleColumns.map((col) => getColumnValue(row, col.key)), ...filterFields.map((field) => getFilterValue(row, field))]
+          .some((v) => String(v ?? "").toLowerCase().includes(q))
       );
     }
     if (activeFilters.length > 0) {
@@ -107,13 +134,13 @@ export function ServiceNowList<T extends { id: string }>({
     }
     if (sortKey) {
       result = [...result].sort((a, b) => {
-        const aVal = String((a as Record<string, unknown>)[sortKey] ?? "");
-        const bVal = String((b as Record<string, unknown>)[sortKey] ?? "");
+        const aVal = String(getColumnValue(a, sortKey) ?? "");
+        const bVal = String(getColumnValue(b, sortKey) ?? "");
         return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
       });
     }
     return result;
-  }, [data, search, activeFilters, sortKey, sortDir, applyFilter]);
+  }, [data, search, activeFilters, sortKey, sortDir, applyFilter, visibleColumns, filterFields, getColumnValue, getFilterValue]);
 
   async function handleBulkDelete() {
     if (!onDeleteSelected) return;
@@ -145,7 +172,7 @@ export function ServiceNowList<T extends { id: string }>({
     const rows = filteredData.map((row) =>
       visibleColumns
         .map((col) => {
-          const val = (row as Record<string, unknown>)[col.key];
+          const val = col.getValue ? col.getValue(row) : (row as Record<string, unknown>)[col.key];
           return `"${String(val ?? "").replace(/"/g, '""')}"`;
         })
         .join(",")
@@ -335,7 +362,7 @@ export function ServiceNowList<T extends { id: string }>({
                     <td key={col.key} className="px-3 py-2 text-sn-text">
                       {col.render
                         ? col.render(row)
-                        : String((row as Record<string, unknown>)[col.key] ?? "—")}
+                        : String(getColumnValue(row, col.key) ?? "—")}
                     </td>
                   ))}
                 </tr>

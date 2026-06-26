@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Code2 } from "lucide-react";
 import { toast } from "sonner";
@@ -31,6 +32,7 @@ const filterFields: FilterField[] = [
     { value: "deployed", label: "Deployed" },
     { value: "cancelled", label: "Cancelled" },
   ]},
+  { key: "created_at", label: "Created" },
 ];
 
 const defaultColumns: ListColumn<DevelopmentWithRelations>[] = [
@@ -62,6 +64,28 @@ interface Props {
 
 export function DevelopmentListClient({ developments }: Props) {
   const router = useRouter();
+  const clientOptions = useMemo(() => {
+    const clients = new Map<string, string>();
+    for (const development of developments) {
+      const label = development.clients?.name;
+      if (label) clients.set(label, label);
+    }
+    return Array.from(clients, ([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [developments]);
+  const storyOptions = useMemo(() => {
+    const stories = new Map<string, string>();
+    for (const development of developments) {
+      const label = development.stories?.title;
+      if (label) stories.set(label, label);
+    }
+    return Array.from(stories, ([value, label]) => ({ value, label })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [developments]);
+  const developmentFilterFields = useMemo<FilterField[]>(() => [
+    ...filterFields.slice(0, 3),
+    { key: "story", label: "Story", type: "select", options: storyOptions, getValue: (row) => (row as DevelopmentWithRelations).stories?.title ?? "" },
+    { key: "client", label: "Client", type: "select", options: clientOptions, getValue: (row) => (row as DevelopmentWithRelations).clients?.name ?? "" },
+    ...filterFields.slice(3),
+  ], [clientOptions, storyOptions]);
 
   async function handleDeleteSelected(ids: string[]) {
     await deleteDevelopments(ids);
@@ -91,7 +115,7 @@ export function DevelopmentListClient({ developments }: Props) {
         title="Developments"
         data={developments}
         columns={defaultColumns}
-        filterFields={filterFields}
+        filterFields={developmentFilterFields}
         onRowClick={navigateToDev}
         onNew={() => router.push("/developments/new")}
         onRefresh={() => router.refresh()}
