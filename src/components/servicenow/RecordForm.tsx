@@ -51,14 +51,17 @@ export function RecordForm({
   }
 
   return (
-    <div className={wide ? "max-w-none" : "max-w-5xl"}>
+    <div className={cn(wide ? "max-w-none" : "max-w-5xl", "h-[calc(100vh-5rem)] min-h-0 flex flex-col")}>
+      <div className="-mx-4 px-4 pt-1 pb-0 bg-sn-bg flex-shrink-0">
       {/* Breadcrumbs */}
       {breadcrumbs.length > 0 && (
-        <Breadcrumbs items={breadcrumbs} className="mb-3" />
+        <div className="pb-3">
+          <Breadcrumbs items={breadcrumbs} />
+        </div>
       )}
 
       {/* Record panel */}
-      <div className="bg-white border border-sn-border rounded-sm shadow-sm mb-4 overflow-hidden">
+      <div className="bg-white border border-sn-border rounded-t-sm shadow-sm overflow-hidden">
         {/* Record header bar — dark like SN */}
         <div className="flex items-center justify-between px-3 py-2.5 bg-sn-header border-b border-black/20">
           <div className="flex items-center gap-3">
@@ -106,6 +109,12 @@ export function RecordForm({
             )}
           </div>
         </div>
+      </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto pb-4">
+      {/* Record panel */}
+      <div className="bg-white border border-sn-border border-t-0 rounded-b-sm shadow-sm mb-4 overflow-hidden">
 
         {/* Form body */}
         <div className="p-4">{children}</div>
@@ -121,6 +130,7 @@ export function RecordForm({
 
       {/* Related lists */}
       {relatedLists && <div>{relatedLists}</div>}
+      </div>
     </div>
   );
 }

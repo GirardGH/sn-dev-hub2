@@ -49,8 +49,8 @@ export function ClientListClient({ clients }: Props) {
   }
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-4">
+    <div className="h-[calc(100vh-5rem)] min-h-0 flex flex-col">
+      <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
           <h1 className="text-lg font-semibold text-sn-text">Clients</h1>
           <p className="text-xs text-sn-text-muted mt-0.5">
@@ -60,6 +60,7 @@ export function ClientListClient({ clients }: Props) {
       </div>
 
       <ServiceNowList
+        className="flex-1"
         title="Clients"
         data={clients}
         columns={defaultColumns}

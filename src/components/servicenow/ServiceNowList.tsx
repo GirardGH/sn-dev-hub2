@@ -39,6 +39,7 @@ interface ServiceNowListProps<T extends { id: string }> {
   extraActions?: React.ReactNode;
   emptyMessage?: string;
   onDeleteSelected?: (ids: string[]) => Promise<void>;
+  className?: string;
 }
 
 export function ServiceNowList<T extends { id: string }>({
@@ -55,6 +56,7 @@ export function ServiceNowList<T extends { id: string }>({
   extraActions,
   emptyMessage = "No records found.",
   onDeleteSelected,
+  className,
 }: ServiceNowListProps<T>) {
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<string>("");
@@ -159,9 +161,9 @@ export function ServiceNowList<T extends { id: string }>({
   }
 
   return (
-    <div className="bg-white border border-sn-border rounded-sm shadow-sm overflow-hidden">
+    <div className={cn("bg-white border border-sn-border rounded-sm shadow-sm overflow-hidden flex flex-col min-h-0", className)}>
       {/* Header bar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-sn-border bg-sn-table-header">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-sn-border bg-sn-table-header flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-semibold text-sn-text">{title}</span>
           <span className="text-[11px] text-sn-text-muted bg-white border border-sn-border rounded-sm px-1.5 py-0.5 font-medium">
@@ -247,9 +249,9 @@ export function ServiceNowList<T extends { id: string }>({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto">
+      <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full text-[13px]">
-          <thead>
+          <thead className="sticky top-0 z-10">
             <tr className="border-b-2 border-sn-border bg-sn-table-header">
               <th className="w-8 px-3 py-2">
                 <Checkbox

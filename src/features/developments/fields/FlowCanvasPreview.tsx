@@ -72,11 +72,12 @@ const STYLES: Record<ActionClass, ActionStyle> = {
   action:       { border: "#64748b", bg: "#f8fafc", selectedBg: "#f1f5f9", icon: Workflow,      iconColor: "#475569", badgeBg: "#f1f5f9", badgeText: "#334155" },
 };
 
-function classifyAction(action: string, nodeType: "trigger" | "step" | "end", branchType?: string | null): ActionClass {
+function classifyAction(action: string, nodeType: "trigger" | "step" | "end" | "merge", branchType?: string | null): ActionClass {
   if (nodeType === "trigger") return "trigger";
   if (nodeType === "end") return "end";
   if (branchType === "if" || branchType === "else_if" || branchType === "else") return "condition";
   const l = action.toLowerCase();
+  if (l === "end" || l.includes("end flow")) return "end";
   if (l.includes("approval") || l.includes("approve") || l.includes("ask for")) return "approval";
   if (l === "if" || /^if\s/.test(l) || l.startsWith("else if") || l.includes(" condition")) return "condition";
   if (l.includes("for each") || l.includes("foreach")) return "loop";
@@ -96,21 +97,34 @@ interface NodeData {
   label: string;
   action: string;
   order?: number;
-  nodeType: "trigger" | "step" | "end";
+  nodeType: "trigger" | "step" | "end" | "merge";
   branchType?: string | null;
   isSelected: boolean;
 }
 
-const NODE_WIDTH = 280;
-const NODE_HEIGHT = 60;
-const V_GAP = 34;
+const NODE_WIDTH = 260;
+const NODE_HEIGHT = 58;
+const V_GAP = 30;
 const V_STEP = NODE_HEIGHT + V_GAP;
-const H_STEP = NODE_WIDTH + 96;
+const H_STEP = 360;
+
+type EdgeTone = "default" | "true" | "false" | "merge";
 
 function FlowStepNode({ data }: NodeProps<NodeData>) {
   const cls = classifyAction(data.action, data.nodeType, data.branchType);
   const s = STYLES[cls];
   const Icon = s.icon;
+
+  if (data.nodeType === "merge") {
+    return (
+      <>
+        <Handle id="top" type="target" position={Position.Top} style={{ opacity: 0, width: 1, height: 1 }} isConnectable={false} />
+        <Handle id="left" type="target" position={Position.Left} style={{ opacity: 0, width: 1, height: 1 }} isConnectable={false} />
+        <Handle id="bottom" type="source" position={Position.Bottom} style={{ opacity: 0, width: 1, height: 1 }} isConnectable={false} />
+        <div style={{ width: 1, height: 1, opacity: 0 }} />
+      </>
+    );
+  }
 
   // Determine badge content
   const badgeLabel =
@@ -127,6 +141,7 @@ function FlowStepNode({ data }: NodeProps<NodeData>) {
     <>
       {data.nodeType !== "trigger" && (
         <Handle
+          id="top"
           type="target"
           position={Position.Top}
           style={{
@@ -139,13 +154,28 @@ function FlowStepNode({ data }: NodeProps<NodeData>) {
         />
       )}
 
+      {data.nodeType !== "trigger" && (
+        <Handle
+          id="left"
+          type="target"
+          position={Position.Left}
+          style={{
+            width: 7, height: 7,
+            background: "#f8fafc",
+            border: "1.5px solid #cbd5e1",
+            opacity: data.branchType ? 1 : 0,
+          }}
+          isConnectable={false}
+        />
+      )}
+
       <div
         style={{
           width: NODE_WIDTH,
           minHeight: NODE_HEIGHT,
           background: data.isSelected ? s.selectedBg : s.bg,
           border: `${data.isSelected ? "2px" : "1.5px"} solid ${s.border}`,
-          borderRadius: data.branchType === "if" ? "6px 6px 6px 6px" : 10,
+          borderRadius: data.branchType === "if" ? "6px 6px 6px 6px" : 8,
           padding: "7px 10px",
           display: "flex",
           alignItems: "center",
@@ -188,7 +218,7 @@ function FlowStepNode({ data }: NodeProps<NodeData>) {
           )}
           <div
             style={{
-              fontSize: 11.5, fontWeight: 600, color: "#1e293b",
+              fontSize: 11, fontWeight: 600, color: "#1e293b",
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", lineHeight: 1.3,
             }}
             title={data.label}
@@ -213,6 +243,7 @@ function FlowStepNode({ data }: NodeProps<NodeData>) {
 
       {data.nodeType !== "end" && (
         <Handle
+          id="bottom"
           type="source"
           position={Position.Bottom}
           style={{
@@ -220,6 +251,22 @@ function FlowStepNode({ data }: NodeProps<NodeData>) {
             background: data.isSelected ? s.border : "#e2e8f0",
             border: `1.5px solid ${data.isSelected ? s.border : "#cbd5e1"}`,
             transition: "all 0.15s",
+          }}
+          isConnectable={false}
+        />
+      )}
+
+      {data.nodeType !== "end" && (
+        data.branchType === "if" || data.branchType === "else_if" || data.branchType === "else"
+      ) && (
+        <Handle
+          id="false"
+          type="source"
+          position={Position.Right}
+          style={{
+            width: 7, height: 7,
+            background: "#fee2e2",
+            border: "1.5px solid #ef4444",
           }}
           isConnectable={false}
         />
@@ -235,11 +282,12 @@ const nodeTypes: NodeTypes = { flowNode: FlowStepNode };
 interface RawNodeDef {
   id: string;
   label?: string;
+  action?: string;
   uuid?: string;
   parentUiId?: string;
   connectedTo?: string;
   order?: number;
-  nodeType?: "trigger" | "step" | "end";
+  nodeType?: "trigger" | "step" | "end" | "merge";
   branchType?: string | null;
 }
 
@@ -298,11 +346,11 @@ function buildEdgesWithBranches(rawNodes: RawNodeDef[]): Edge[] {
       target: elseId,
       type: "smoothstep",
       label: "false",
-      labelStyle: { fontSize: 9.5, fontWeight: 700, fill: "#dc2626" },
-      labelBgStyle: { fill: "#fef2f2", rx: 3 },
+      labelStyle: { fontSize: 9.5, fontWeight: 700, fill: "#7e22ce" },
+      labelBgStyle: { fill: "#f3e8ff", rx: 3 },
       labelShowBg: true,
-      style: { stroke: "#ef4444", strokeWidth: 1.5, strokeDasharray: "5,3" },
-      markerEnd: { type: MarkerType.ArrowClosed, color: "#ef4444", width: 13, height: 13 },
+      style: { stroke: "#aeb8c2", strokeWidth: 1.5 },
+      markerEnd: { type: MarkerType.ArrowClosed, color: "#aeb8c2", width: 13, height: 13 },
     });
   }
 
@@ -314,21 +362,26 @@ function makeGraphEdge(
   source: string,
   target: string,
   label?: string,
-  tone: "default" | "true" | "false" = "default",
+  tone: EdgeTone = "default",
 ): Edge {
   const isFalse = tone === "false";
   const isTrue = tone === "true";
-  const color = isTrue ? "#22c55e" : isFalse ? "#ef4444" : "#94a3b8";
+  const isFalseLabel = label === "false" || label === "else";
+  const color = isTrue ? "#22c55e" : "#aeb8c2";
+  const labelColor = isFalseLabel ? "#7e22ce" : "#16a34a";
+  const labelBg = isFalseLabel ? "#f3e8ff" : "#f0fdf4";
   return {
     id,
     source,
     target,
     type: "smoothstep",
+    sourceHandle: isFalseLabel ? "false" : "bottom",
+    targetHandle: isFalse ? "left" : "top",
     label,
-    labelStyle: label ? { fontSize: 9.5, fontWeight: 700, fill: isFalse ? "#dc2626" : "#16a34a" } : undefined,
-    labelBgStyle: label ? { fill: isFalse ? "#fef2f2" : "#f0fdf4", rx: 3 } : undefined,
+    labelStyle: label ? { fontSize: 9.5, fontWeight: 700, fill: labelColor } : undefined,
+    labelBgStyle: label ? { fill: labelBg, rx: 3 } : undefined,
     labelShowBg: !!label,
-    style: { stroke: color, strokeWidth: 1.5, strokeDasharray: isFalse ? "5,3" : undefined },
+    style: { stroke: color, strokeWidth: 1.5 },
     markerEnd: { type: MarkerType.ArrowClosed, color, width: 13, height: 13 },
   };
 }
@@ -347,7 +400,7 @@ function buildEdgesFromFlowRelations(rawNodes: RawNodeDef[]): Edge[] {
     source: string,
     target: string,
     label?: string,
-    tone: "default" | "true" | "false" = "default",
+    tone: EdgeTone = "default",
   ) => {
     if (source === target) return;
     const key = `${source}->${target}:${label ?? ""}`;
@@ -411,6 +464,240 @@ function buildEdgesFromFlowRelations(rawNodes: RawNodeDef[]): Edge[] {
   }
 
   return edges;
+}
+
+interface FlowTreeNode {
+  raw: RawNodeDef;
+  trueBranch: FlowTreeNode[];
+  falseBranch: FlowTreeNode[];
+}
+
+interface FlowTree {
+  main: FlowTreeNode[];
+}
+
+interface FlowTreeLayout {
+  positions: Map<string, { x: number; y: number }>;
+  edges: Edge[];
+  mergeNodes: RawNodeDef[];
+  maxDepth: number;
+  maxRow: number;
+}
+
+type FlowTerminal = {
+  id: string;
+  label?: string;
+  tone?: EdgeTone;
+};
+
+function isConditionNode(node: RawNodeDef): boolean {
+  return node.branchType === "if" || node.branchType === "else_if" || node.branchType === "else";
+}
+
+function isEndLogicNode(node: RawNodeDef): boolean {
+  const text = `${node.label ?? ""} ${node.action ?? ""}`.trim().toLowerCase();
+  return text === "end" || text === "end end";
+}
+
+function sortByOrder(nodes: RawNodeDef[]): RawNodeDef[] {
+  return [...nodes].sort((a, b) => {
+    const orderDelta = (a.order ?? 0) - (b.order ?? 0);
+    return orderDelta !== 0 ? orderDelta : a.id.localeCompare(b.id);
+  });
+}
+
+function buildFlowTree(rawNodes: RawNodeDef[]): FlowTree {
+  const stepNodes = rawNodes.filter((node) => node.nodeType === "step");
+  const childrenByParent = new Map<string, RawNodeDef[]>();
+  const falseBySource = new Map<string, RawNodeDef[]>();
+
+  for (const node of stepNodes) {
+    if (node.connectedTo) {
+      if (!falseBySource.has(node.connectedTo)) falseBySource.set(node.connectedTo, []);
+      falseBySource.get(node.connectedTo)!.push(node);
+      continue;
+    }
+    if (node.parentUiId) {
+      if (!childrenByParent.has(node.parentUiId)) childrenByParent.set(node.parentUiId, []);
+      childrenByParent.get(node.parentUiId)!.push(node);
+    }
+  }
+
+  const visited = new Set<string>();
+  const toTree = (node: RawNodeDef): FlowTreeNode => {
+    visited.add(node.id);
+    const trueChildren = node.uuid ? sortByOrder(childrenByParent.get(node.uuid) ?? []) : [];
+    const falseChildren = node.uuid ? sortByOrder(falseBySource.get(node.uuid) ?? []) : [];
+    return {
+      raw: node,
+      trueBranch: trueChildren.map(toTree),
+      falseBranch: falseChildren.map(toTree),
+    };
+  };
+
+  const mainRoots = sortByOrder(
+    stepNodes.filter((node) => !node.parentUiId && !node.connectedTo),
+  ).map(toTree);
+  const orphanRoots = sortByOrder(stepNodes.filter((node) => !visited.has(node.id))).map(toTree);
+
+  return {
+    main: [...mainRoots, ...orphanRoots].sort((a, b) => (a.raw.order ?? 0) - (b.raw.order ?? 0)),
+  };
+}
+
+function treeHasExplicitEnd(nodes: FlowTreeNode[]): boolean {
+  for (const node of nodes) {
+    if (isEndLogicNode(node.raw)) return true;
+    if (treeHasExplicitEnd(node.trueBranch) || treeHasExplicitEnd(node.falseBranch)) return true;
+  }
+  return false;
+}
+
+function branchColumnSpan(nodes: FlowTreeNode[]): number {
+  let span = 0;
+
+  for (const node of nodes) {
+    if (!isConditionNode(node.raw)) continue;
+
+    const trueSpan = branchColumnSpan(node.trueBranch);
+    const falseStart = trueSpan + 1;
+    const falseSpan = falseStart + branchColumnSpan(node.falseBranch);
+    span = Math.max(span, trueSpan, falseSpan);
+  }
+
+  return span;
+}
+
+function layoutFlowTree(tree: FlowTree): FlowTreeLayout {
+  const positions = new Map<string, { x: number; y: number }>();
+  const edges: Edge[] = [];
+  const mergeNodes: RawNodeDef[] = [];
+  const edgeKeys = new Set<string>();
+  let row = 1;
+  let maxDepth = 0;
+  let mergeIndex = 0;
+
+  const addEdge = (
+    source: string,
+    target: string,
+    label?: string,
+    tone: EdgeTone = "default",
+  ) => {
+    if (source === target) return;
+    const key = `${source}->${target}:${label ?? ""}`;
+    if (edgeKeys.has(key)) return;
+    edgeKeys.add(key);
+    edges.push(makeGraphEdge(`tree-e-${edges.length}-${source}-${target}`, source, target, label, tone));
+  };
+
+  const addMergeNode = (depth: number): RawNodeDef => {
+    const node: RawNodeDef = {
+      id: `merge-${mergeIndex++}`,
+      label: "",
+      action: "Merge",
+      nodeType: "merge",
+    };
+    mergeNodes.push(node);
+    positions.set(node.id, { x: depth * H_STEP + NODE_WIDTH / 2, y: row * V_STEP - V_GAP / 2 });
+    return node;
+  };
+
+  const uniqueTerminals = (terminals: FlowTerminal[]): FlowTerminal[] => {
+    const seen = new Set<string>();
+    return terminals.filter((terminal) => {
+      const key = `${terminal.id}:${terminal.label ?? ""}:${terminal.tone ?? "default"}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const placeBranches = (node: FlowTreeNode, depth: number): FlowTerminal[] => {
+    if (!isConditionNode(node.raw)) {
+      return isEndLogicNode(node.raw) ? [] : [{ id: node.raw.id }];
+    }
+
+    const terminals: FlowTerminal[] = [];
+    const branchStartRow = row;
+    if (node.trueBranch.length > 0) {
+      addEdge(node.raw.id, node.trueBranch[0].raw.id, "true", "true");
+      row = branchStartRow;
+      terminals.push(...placeSequence(node.trueBranch, depth));
+    } else {
+      terminals.push({ id: node.raw.id, label: "true", tone: "true" });
+    }
+    const trueEndRow = row;
+
+    if (node.falseBranch.length > 0) {
+      const falseDepth = depth + branchColumnSpan(node.trueBranch) + 1;
+      addEdge(
+        node.raw.id,
+        node.falseBranch[0].raw.id,
+        node.falseBranch[0].raw.branchType === "else" ? "else" : "false",
+        "false",
+      );
+      row = branchStartRow;
+      terminals.push(...placeSequence(node.falseBranch, falseDepth));
+    } else {
+      terminals.push({ id: node.raw.id, label: "false", tone: "merge" });
+    }
+    const falseEndRow = row;
+    row = Math.max(trueEndRow, falseEndRow);
+
+    return uniqueTerminals(terminals);
+  };
+
+  const placeSequence = (sequence: FlowTreeNode[], depth: number): FlowTerminal[] => {
+    const sequenceTerminals: FlowTerminal[] = [];
+
+    for (let i = 0; i < sequence.length; i++) {
+      const node = sequence[i];
+      const next = sequence[i + 1];
+      maxDepth = Math.max(maxDepth, depth);
+      positions.set(node.raw.id, { x: depth * H_STEP, y: row * V_STEP });
+      row++;
+
+      const nodeTerminals = placeBranches(node, depth);
+      if (next) {
+        const needsMerge = nodeTerminals.length > 1 || nodeTerminals.some((terminal) => terminal.label || terminal.tone === "merge");
+        if (needsMerge) {
+          const merge = addMergeNode(depth);
+          for (const terminal of nodeTerminals) {
+            addEdge(terminal.id, merge.id, terminal.label, terminal.tone);
+          }
+          addEdge(merge.id, next.raw.id);
+          row++;
+        } else {
+          for (const terminal of nodeTerminals) {
+            addEdge(terminal.id, next.raw.id, terminal.label, terminal.tone);
+          }
+        }
+      } else {
+        sequenceTerminals.push(...nodeTerminals);
+      }
+    }
+
+    return sequenceTerminals;
+  };
+
+  const hasExplicitEnd = treeHasExplicitEnd(tree.main);
+  positions.set("trigger", { x: 0, y: 0 });
+  if (tree.main.length > 0) addEdge("trigger", tree.main[0].raw.id);
+  const mainTerminals = placeSequence(tree.main, 0);
+  const endRow = row;
+  if (!hasExplicitEnd) {
+    positions.set("end", { x: 0, y: endRow * V_STEP });
+    const terminals = mainTerminals.length > 0 ? mainTerminals : [{ id: "trigger" }];
+    if (terminals.length > 1 || terminals.some((terminal) => terminal.label || terminal.tone === "merge")) {
+      const merge = addMergeNode(0);
+      for (const terminal of terminals) addEdge(terminal.id, merge.id, terminal.label, terminal.tone);
+      addEdge(merge.id, "end");
+    } else {
+      for (const terminal of terminals) addEdge(terminal.id, "end", terminal.label, terminal.tone);
+    }
+  }
+
+  return { positions, edges, mergeNodes, maxDepth, maxRow: Math.max(endRow, row) };
 }
 
 // ── Detail panel ─────────────────────────────────────────────────────────────
@@ -732,7 +1019,7 @@ export function FlowCanvasPreview({ data }: Props) {
       uuid?: string;
       parentUiId?: string;
       connectedTo?: string;
-      nodeType: "trigger" | "step" | "end";
+      nodeType: "trigger" | "step" | "end" | "merge";
       branchType?: string | null;
     };
     const raw: RawNode[] = [];
@@ -760,57 +1047,32 @@ export function FlowCanvasPreview({ data }: Props) {
 
     raw.push({ id: "end", label: "End", action: "End", nodeType: "end" });
 
-    const stepNodes = raw.filter((node) => node.nodeType === "step");
-    const byUuid = new Map<string, RawNode>();
-    for (const node of stepNodes) {
-      if (node.uuid) byUuid.set(node.uuid, node);
-    }
+    const hasStructuralLinks = raw.some((node) => node.parentUiId || node.connectedTo);
+    const treeLayout = hasStructuralLinks ? layoutFlowTree(buildFlowTree(raw)) : null;
+    const renderedRaw = treeLayout
+      ? [...raw.filter((node) => treeLayout.positions.has(node.id)), ...treeLayout.mergeNodes]
+      : raw;
 
-    const depthMemo = new Map<string, number>();
-    const getDepth = (node: RawNode): number => {
-      if (node.nodeType !== "step") return 0;
-      if (depthMemo.has(node.id)) return depthMemo.get(node.id)!;
-      let depth = 0;
-      if (node.parentUiId) {
-        const parent = byUuid.get(node.parentUiId);
-        if (parent) depth = getDepth(parent) + 1;
-      } else if (node.connectedTo) {
-        const source = byUuid.get(node.connectedTo);
-        if (source) depth = getDepth(source);
-      }
-      depthMemo.set(node.id, depth);
-      return depth;
-    };
-
-    const maxDepth = stepNodes.reduce((max, node) => Math.max(max, getDepth(node)), 0);
-    const maxOrder = stepNodes.reduce((max, node) => Math.max(max, node.order ?? 0), 0);
-
-    const builtNodes: Node<NodeData>[] = raw.map((r, i) => ({
+    const builtNodes: Node<NodeData>[] = renderedRaw.map((r, i) => ({
       id: r.id,
       type: "flowNode",
-      position: {
-        x: r.nodeType === "end" ? Math.max(0, maxDepth) * H_STEP : getDepth(r) * H_STEP,
-        y: r.nodeType === "trigger" ? 0 : r.nodeType === "end" ? (maxOrder + 1) * V_STEP : ((r.order ?? i) * V_STEP),
-      },
+      position: treeLayout?.positions.get(r.id) ?? { x: 0, y: i * V_STEP },
       data: {
-        label: r.label,
-        action: r.action,
+        label: r.label ?? "",
+        action: r.action ?? "",
         order: r.nodeType === "step" ? r.order : undefined,
-        nodeType: r.nodeType,
+        nodeType: r.nodeType ?? "step",
         branchType: r.branchType,
         isSelected: r.id === selectedNodeId,
       },
-      style: { width: NODE_WIDTH },
+      style: { width: r.nodeType === "merge" ? 1 : NODE_WIDTH, height: r.nodeType === "merge" ? 1 : undefined },
       draggable: false,
       selectable: false,
     }));
 
-    const hasStructuralLinks = raw.some((node) => node.parentUiId || node.connectedTo);
-    const builtEdges = hasStructuralLinks
-      ? buildEdgesFromFlowRelations(raw)
-      : buildEdgesWithBranches(raw);
+    const builtEdges = treeLayout?.edges ?? (hasStructuralLinks ? buildEdgesFromFlowRelations(raw) : buildEdgesWithBranches(raw));
 
-    const totalContent = (maxOrder + 2) * V_STEP + 60;
+    const totalContent = treeLayout ? (treeLayout.maxRow + 1) * V_STEP + 60 : raw.length * V_STEP + 60;
     return {
       nodes: builtNodes,
       edges: builtEdges,
