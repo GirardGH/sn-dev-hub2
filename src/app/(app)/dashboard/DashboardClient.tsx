@@ -93,6 +93,7 @@ export function DashboardClient({ stats, recentDevelopments, recentImports }: Pr
             size="sm"
             icon={<Plus className="w-3.5 h-3.5" />}
             onClick={() => router.push("/clients/new")}
+            data-navigation-feedback="true"
           >
             New Client
           </Button>
@@ -100,6 +101,7 @@ export function DashboardClient({ stats, recentDevelopments, recentImports }: Pr
             size="sm"
             icon={<FileCode2 className="w-3.5 h-3.5" />}
             onClick={() => router.push("/xml-imports/new")}
+            data-navigation-feedback="true"
           >
             Import XML
           </Button>
@@ -112,6 +114,7 @@ export function DashboardClient({ stats, recentDevelopments, recentImports }: Pr
           <button
             key={key}
             onClick={() => router.push(href)}
+            data-navigation-feedback="true"
             className="bg-white border border-sn-border rounded shadow-sm p-4 flex items-center gap-4 hover:shadow-md hover:border-sn-accent/30 transition-all text-left"
           >
             <div className={`w-12 h-12 rounded-lg ${bg} flex items-center justify-center flex-shrink-0`}>
@@ -135,6 +138,7 @@ export function DashboardClient({ stats, recentDevelopments, recentImports }: Pr
             </span>
             <button
               onClick={() => router.push("/developments")}
+              data-navigation-feedback="true"
               className="text-xs text-sn-accent hover:underline flex items-center gap-1"
             >
               View all <ArrowRight className="w-3 h-3" />
@@ -150,6 +154,7 @@ export function DashboardClient({ stats, recentDevelopments, recentImports }: Pr
                 <div
                   key={dev.id}
                   className="px-4 py-3 hover:bg-sn-accent-light transition-colors cursor-pointer"
+                  data-navigation-feedback="true"
                   onClick={() =>
                     router.push(
                       `/clients/${dev.client_id}/stories/${dev.story_id}/developments/${dev.id}`
@@ -184,6 +189,7 @@ export function DashboardClient({ stats, recentDevelopments, recentImports }: Pr
             </span>
             <button
               onClick={() => router.push("/xml-imports")}
+              data-navigation-feedback="true"
               className="text-xs text-sn-accent hover:underline flex items-center gap-1"
             >
               View all <ArrowRight className="w-3 h-3" />
@@ -199,6 +205,7 @@ export function DashboardClient({ stats, recentDevelopments, recentImports }: Pr
                 <div
                   key={imp.id}
                   className="px-4 py-3 hover:bg-sn-accent-light transition-colors cursor-pointer"
+                  data-navigation-feedback="true"
                   onClick={() => router.push(`/xml-imports/${imp.id}`)}
                 >
                   <div className="flex items-start justify-between gap-2">
@@ -227,10 +234,10 @@ export function DashboardClient({ stats, recentDevelopments, recentImports }: Pr
           Quick Access
         </h3>
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary" size="sm" icon={<Building2 className="w-3.5 h-3.5" />} onClick={() => router.push("/clients/new")}>New Client</Button>
-          <Button variant="secondary" size="sm" icon={<BookOpen className="w-3.5 h-3.5" />} onClick={() => router.push("/clients")}>View Clients</Button>
-          <Button variant="secondary" size="sm" icon={<Code2 className="w-3.5 h-3.5" />} onClick={() => router.push("/developments")}>All Developments</Button>
-          <Button variant="secondary" size="sm" icon={<FileCode2 className="w-3.5 h-3.5" />} onClick={() => router.push("/xml-imports/new")}>Import XML</Button>
+          <Button variant="secondary" size="sm" icon={<Building2 className="w-3.5 h-3.5" />} onClick={() => router.push("/clients/new")} data-navigation-feedback="true">New Client</Button>
+          <Button variant="secondary" size="sm" icon={<BookOpen className="w-3.5 h-3.5" />} onClick={() => router.push("/clients")} data-navigation-feedback="true">View Clients</Button>
+          <Button variant="secondary" size="sm" icon={<Code2 className="w-3.5 h-3.5" />} onClick={() => router.push("/developments")} data-navigation-feedback="true">All Developments</Button>
+          <Button variant="secondary" size="sm" icon={<FileCode2 className="w-3.5 h-3.5" />} onClick={() => router.push("/xml-imports/new")} data-navigation-feedback="true">Import XML</Button>
         </div>
       </div>
     </div>
