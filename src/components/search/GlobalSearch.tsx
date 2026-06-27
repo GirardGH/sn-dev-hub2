@@ -174,6 +174,7 @@ export function GlobalSearch() {
                     <button
                       key={c.id}
                       onClick={() => onClientClick(c)}
+                      data-navigation-feedback="true"
                       className="w-full flex items-center gap-3 px-3 py-2 hover:bg-sn-accent-light transition-colors text-left border-b border-sn-border/50 last:border-0 group"
                     >
                       <div className="w-6 h-6 rounded-sm bg-blue-50 flex items-center justify-center flex-shrink-0">
@@ -205,6 +206,7 @@ export function GlobalSearch() {
                     <button
                       key={s.id}
                       onClick={() => onStoryClick(s)}
+                      data-navigation-feedback="true"
                       className="w-full flex items-center gap-3 px-3 py-2 hover:bg-sn-accent-light transition-colors text-left border-b border-sn-border/50 last:border-0 group"
                     >
                       <div className="w-6 h-6 rounded-sm bg-green-50 flex items-center justify-center flex-shrink-0">
@@ -240,6 +242,7 @@ export function GlobalSearch() {
                     <button
                       key={d.id}
                       onClick={() => onDevClick(d)}
+                      data-navigation-feedback="true"
                       className="w-full flex items-center gap-3 px-3 py-2 hover:bg-sn-accent-light transition-colors text-left border-b border-sn-border/50 last:border-0 group"
                     >
                       <div className="w-6 h-6 rounded-sm bg-purple-50 flex items-center justify-center flex-shrink-0">
