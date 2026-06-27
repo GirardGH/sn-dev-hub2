@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
   Building2,
   BookOpen,
   Code2,
@@ -17,7 +16,6 @@ const navSections = [
   {
     label: "Application",
     items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
       { href: "/clients", label: "Clients", icon: Building2 },
       { href: "/stories", label: "Stories", icon: BookOpen },
       { href: "/developments", label: "Developments", icon: Code2 },
@@ -42,7 +40,11 @@ export function Sidebar() {
   return (
     <aside className="fixed top-0 left-0 h-screen w-56 bg-sn-sidebar flex flex-col z-30 select-none">
       {/* Brand */}
-      <div className="flex items-center gap-2.5 px-4 h-12 border-b border-white/10 flex-shrink-0">
+      <Link
+        href="/dashboard"
+        data-navigation-feedback="true"
+        className="flex items-center gap-2.5 px-4 h-12 border-b border-white/10 flex-shrink-0 cursor-default"
+      >
         <div className="w-6 h-6 bg-sn-accent rounded-sm flex items-center justify-center flex-shrink-0">
           <Layers className="w-3.5 h-3.5 text-white" />
         </div>
@@ -50,7 +52,7 @@ export function Sidebar() {
           <p className="text-white font-semibold text-sm leading-none tracking-tight">SN Dev Hub</p>
           <p className="text-sn-sidebar-text text-[10px] leading-none mt-0.5 truncate">ServiceNow Manager</p>
         </div>
-      </div>
+      </Link>
 
       {/* Navigation */}
       <nav className="flex-1 py-2 overflow-y-auto">
