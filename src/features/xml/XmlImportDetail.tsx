@@ -206,6 +206,7 @@ function DevelopmentsCreatedList({ developments }: DevListProps) {
                       `/clients/${dev.client_id}/stories/${dev.story_id}/developments/${dev.id}`
                     )
                   }
+                  data-navigation-feedback="true"
                   className="w-full flex items-center justify-between px-3 py-2 bg-sn-bg border border-sn-border rounded hover:bg-white hover:border-sn-accent/40 transition-colors text-left group"
                 >
                   <span className="text-sm text-sn-text truncate group-hover:text-sn-accent transition-colors">
@@ -340,6 +341,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
             {xmlImport.clients ? (
               <button
                 onClick={() => router.push(`/clients/${xmlImport.clients!.id}`)}
+                data-navigation-feedback="true"
                 className="text-sm text-sn-accent hover:underline flex items-center gap-1"
               >
                 {xmlImport.clients.name}
@@ -361,6 +363,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
                     `/clients/${xmlImport.clients!.id}/stories/${xmlImport.stories!.id}`
                   )
                 }
+                data-navigation-feedback="true"
                 className="text-sm text-sn-accent hover:underline flex items-center gap-1"
               >
                 {xmlImport.stories.title}
@@ -603,7 +606,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
 
       {/* ── Footer ── */}
       <div className="flex items-center gap-2 pb-6">
-        <Button variant="secondary" onClick={() => router.push("/xml-imports")}>
+        <Button variant="secondary" onClick={() => router.push("/xml-imports")} data-navigation-feedback="true">
           Retour à la liste
         </Button>
         {xmlImport.stories && xmlImport.clients && (
@@ -613,6 +616,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
                 `/clients/${xmlImport.clients!.id}/stories/${xmlImport.stories!.id}`
               )
             }
+            data-navigation-feedback="true"
           >
             Voir la Story
           </Button>

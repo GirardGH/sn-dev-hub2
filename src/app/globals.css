@@ -37,4 +37,21 @@
   .text-balance {
     text-wrap: balance;
   }
+
+  .sn-navigation-spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 9999px;
+    border: 3px solid #dbeafe;
+    border-top-color: #0b66d8;
+    border-right-color: #0b66d8;
+    animation: sn-navigation-spin 0.75s linear infinite;
+    box-shadow: 0 0 0 4px rgba(11, 102, 216, 0.08);
+  }
+
+  @keyframes sn-navigation-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
 }

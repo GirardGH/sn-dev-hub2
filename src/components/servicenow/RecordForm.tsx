@@ -67,6 +67,7 @@ export function RecordForm({
           <div className="flex items-center gap-3">
             <button
               onClick={handleBack}
+              data-navigation-feedback="true"
               className="text-white/60 hover:text-white transition-colors"
             >
               <ChevronLeft className="w-5 h-5" />

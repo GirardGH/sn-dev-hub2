@@ -150,6 +150,7 @@ export function RelatedList<T extends { id: string }>({
               size="sm"
               icon={<Plus className="w-3.5 h-3.5" />}
               onClick={onNew}
+              data-navigation-feedback="true"
               className="bg-white text-sn-accent hover:bg-white/90 border-0 shadow-none font-semibold"
             >
               New
@@ -217,6 +218,7 @@ export function RelatedList<T extends { id: string }>({
                   <tr
                     key={row.id}
                     onClick={() => onRowClick?.(row)}
+                    data-navigation-feedback={onRowClick ? "true" : undefined}
                     className={cn(
                       "border-b border-sn-border last:border-0 transition-colors group",
                       idx % 2 === 1 ? "bg-sn-table-stripe" : "bg-white",
@@ -224,7 +226,7 @@ export function RelatedList<T extends { id: string }>({
                     )}
                   >
                     {onDeleteSelected && (
-                      <td className="w-8 px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                      <td className="w-8 px-3 py-2" onClick={(e) => e.stopPropagation()} data-navigation-feedback="ignore">
                         <div className={cn(
                           "transition-opacity",
                           selected.has(row.id) || selected.size > 0
