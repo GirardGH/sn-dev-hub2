@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { DevelopmentAttachments } from "@/features/attachments/DevelopmentAttachments";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,11 +27,10 @@ import {
   DEVELOPMENT_TYPE_MAP,
   getDevTypeConfig,
 } from "./developmentTypes";
-import { BusinessRuleFields } from "./fields/BusinessRuleFields";
-import { ScriptIncludeFields } from "./fields/ScriptIncludeFields";
+import { ServiceNowFields } from "./fields/ServiceNowFields";
+import { SN_SCHEMAS, SN_LEGACY_ALIASES } from "./serviceNowForms";
 import { GenericScriptFields } from "./fields/GenericScriptFields";
 import { GenericConfigFields } from "./fields/GenericConfigFields";
-import { WidgetFields } from "./fields/WidgetFields";
 import { NotificationConfigFields } from "./fields/NotificationConfigFields";
 import { FlowPreview, type FlowPreviewData } from "./fields/FlowPreview";
 import { CodeEditor } from "@/components/servicenow/CodeEditor";
@@ -105,19 +105,27 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
     },
   });
 
+  const configDrafts = useRef<Record<string, Record<string, unknown>>>({});
+
   function handleTypeChange(type: string) {
+    configDrafts.current[selectedType] = config;
     setSelectedType(type);
     setValue("development_type", type);
-    const defaultConfig = getDevTypeConfig(type)?.defaultConfig ?? {};
+    const defaultConfig = configDrafts.current[type] ?? structuredClone(getDevTypeConfig(type)?.defaultConfig ?? {});
     setConfig(defaultConfig);
     setValue("config", defaultConfig);
-    const snTable = getDevTypeConfig(type)?.snTable ?? "";
-    setValue("target_table", snTable);
   }
 
   function handleConfigChange(newConfig: Record<string, unknown>) {
-    setConfig(newConfig);
-    setValue("config", newConfig);
+    const table = getDevTypeConfig(selectedType)?.snTable ?? selectedType;
+    const synced = { ...newConfig };
+    for (const [canonical, alias] of Object.entries(SN_LEGACY_ALIASES[table] ?? {})) {
+      if (alias in newConfig && newConfig[alias] !== config[alias] && newConfig[canonical] === config[canonical]) {
+        synced[canonical] = newConfig[alias];
+      }
+    }
+    setConfig(synced);
+    setValue("config", synced);
   }
 
   function onInvalid(errs: Record<string, unknown>) {
@@ -164,19 +172,16 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
   }
 
   function renderTypeFields() {
-    // Types not in DEVELOPMENT_TYPE_MAP use the fully dynamic generic form
+    const snTable = getDevTypeConfig(selectedType)?.snTable ?? selectedType;
+    if (SN_SCHEMAS[snTable] && selectedType !== "notification") {
+      return <ServiceNowFields key={selectedType} table={snTable} config={config} onChange={handleConfigChange} />;
+    }
     if (!getDevTypeConfig(selectedType)) {
       return <GenericConfigFields config={config} onChange={handleConfigChange} />;
     }
     switch (selectedType) {
-      case "business_rule":
-        return <BusinessRuleFields config={config} onChange={handleConfigChange} />;
-      case "script_include":
-        return <ScriptIncludeFields config={config} onChange={handleConfigChange} />;
       case "notification":
-        return <NotificationConfigFields config={config} onChange={handleConfigChange} />;
-      case "widget":
-        return <WidgetFields config={config} onChange={handleConfigChange} />;
+        return <><NotificationConfigFields config={config} onChange={handleConfigChange} /><details className="mb-4 border border-sn-border"><summary className="p-3 cursor-pointer text-sm">Tous les champs du dictionnaire ServiceNow</summary><ServiceNowFields table="sysevent_email_action" config={config} onChange={handleConfigChange} /></details></>;
       case "flow":
         return (
           <>
@@ -197,8 +202,11 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
     resolveSnLabel(selectedType);
 
   return (
-    <>
+    <DevelopmentAttachments developmentId={development?.id}>
+      {({ header, strip, busy }) => <>
       <RecordForm
+        headerActions={header}
+        attachmentStrip={strip}
         wide
         title={isNew ? `New ${typeLabel}` : development.title}
         subtitle={`${storyTitle}${clientName ? ` · ${clientName}` : ""}`}
@@ -209,8 +217,8 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
           { label: storyTitle, href: `/clients/${resolvedClientId}/stories/${resolvedStoryId}` },
           { label: isNew ? "New Development" : development.title },
         ]}
-        onSave={handleSubmit(onSubmit, onInvalid)}
-        onDelete={!isNew ? () => setConfirmDelete(true) : undefined}
+        onSave={busy ? undefined : handleSubmit(onSubmit, onInvalid)}
+        onDelete={!isNew && !busy ? () => setConfirmDelete(true) : undefined}
         saving={saving}
         deleting={deleting}
         isNew={isNew}
@@ -329,6 +337,7 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
         title="Delete development"
         message={`Delete "${development?.title}"?`}
       />
-    </>
+    </>}
+    </DevelopmentAttachments>
   );
 }

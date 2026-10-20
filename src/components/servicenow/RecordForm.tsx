@@ -24,6 +24,8 @@ interface RecordFormProps {
   updatedAt?: string;
   backHref?: string;
   wide?: boolean;
+  headerActions?: React.ReactNode;
+  attachmentStrip?: React.ReactNode;
 }
 
 export function RecordForm({
@@ -42,6 +44,8 @@ export function RecordForm({
   updatedAt,
   backHref,
   wide = false,
+  headerActions,
+  attachmentStrip,
 }: RecordFormProps) {
   const router = useRouter();
 
@@ -85,6 +89,7 @@ export function RecordForm({
 
           {/* Action buttons */}
           <div className="flex items-center gap-2">
+            {headerActions}
             {!isNew && onDelete && (
               <Button
                 variant="ghost"
@@ -117,6 +122,7 @@ export function RecordForm({
       {/* Record panel */}
       <div className="bg-white border border-sn-border border-t-0 rounded-b-sm shadow-sm mb-4 overflow-hidden">
 
+        {attachmentStrip}
         {/* Form body */}
         <div className="p-4">{children}</div>
 

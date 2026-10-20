@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:forms": "node scripts/test-servicenow-forms.cjs",
+    "test:attachments": "node scripts/test-attachments.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

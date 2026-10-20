@@ -31,6 +31,10 @@ export async function middleware(request: NextRequest) {
   const publicRoutes = ["/login", "/signup", "/auth/callback"];
   const isPublicRoute = publicRoutes.some((r) => pathname.startsWith(r));
 
+  if (!user && pathname.startsWith("/api/attachments/")) {
+    return NextResponse.json({ error: "Authentification requise" }, { status: 401 });
+  }
+
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";

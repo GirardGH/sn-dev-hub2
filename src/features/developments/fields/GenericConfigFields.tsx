@@ -92,7 +92,7 @@ export function GenericConfigFields({ config, onChange, readOnly }: Props) {
   const metaEntries: [string, unknown][] = [];
 
   for (const [key, value] of Object.entries(config)) {
-    if (SKIP_KEYS.has(key)) continue;
+    if (SKIP_KEYS.has(key) || key.startsWith("_sn")) continue;
     if (value === null || value === undefined || value === "") continue;
 
     if (SYS_META_KEYS.has(key)) {

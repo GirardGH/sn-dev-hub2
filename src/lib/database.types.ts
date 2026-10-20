@@ -1,8 +1,19 @@
+import type { DevelopmentAttachment } from "@/features/attachments/attachment.types";
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
   public: {
     Tables: {
+      development_attachments: {
+        Row: DevelopmentAttachment;
+        Insert: {
+          id?: string; development_id: string; user_id: string; file_name: string;
+          content_type?: string; size_bytes: number; status?: "pending" | "ready";
+          created_at?: string; deleted_at?: string | null;
+        };
+        Update: { status?: "pending" | "ready"; deleted_at?: string | null };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;

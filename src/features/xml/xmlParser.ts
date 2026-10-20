@@ -1,7 +1,9 @@
+import { ADDITIONAL_TYPES } from "@/features/developments/serviceNowForms";
 import type { ParsedComponent, XmlParseResult } from "./xml.types";
 
 // XML tag → dev type (direct / flat export format)
 const XML_TAG_TO_DEV_TYPE: Record<string, string> = {
+  ...Object.fromEntries(ADDITIONAL_TYPES.map(([type, , table]) => [table, type])),
   sys_script: "business_rule",
   sys_script_include: "script_include",
   sys_script_client: "client_script",
@@ -475,6 +477,23 @@ function extractConfigFromXmlNode(el: Element, devType: string): Record<string, 
       break;
   }
 
+  // Keep every dictionary field, including empty values and raw reference IDs.
+  // Legacy aliases remain available for existing previews. Raw keys win over
+  // lossy historical extraction (especially BR filter_condition vs condition).
+  const displayValues: Record<string, string> = {};
+  for (const child of Array.from(el.children)) {
+    const key = child.tagName.toLowerCase();
+    const text = child.textContent ?? "";
+    config[key] = text === "true" ? true : text === "false" ? false : text;
+    const display = child.getAttribute("display_value");
+    if (display) displayValues[key] = display;
+  }
+  if (devType === "business_rule") {
+    config.filter_condition = getDirectChildText(el, "filter_condition");
+    config.condition = getDirectChildText(el, "condition");
+  }
+  if (Object.keys(displayValues).length) config._snDisplayValues = displayValues;
+  config._snFormVersion = 2;
   return config;
 }
 
@@ -1102,7 +1121,7 @@ function mapUpdateXmlToComponent(el: Element): ParsedComponent | null {
 
   const xmlTag = xmlTagFromUpdateName(name);
   // Fall back to the xmlTag (table name) instead of "unknown" for unmapped types
-  const devType = UPDATE_TYPE_TO_DEV_TYPE[typeLabel.toLowerCase()] ?? xmlTag;
+  const devType = XML_TAG_TO_DEV_TYPE[xmlTag] ?? UPDATE_TYPE_TO_DEV_TYPE[typeLabel.toLowerCase()] ?? xmlTag;
   const title = targetName || name;
 
   let config: Record<string, unknown> = {

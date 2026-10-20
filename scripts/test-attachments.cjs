@@ -1,0 +1,15 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const ts = require('typescript');
+const mod = {exports:{}};
+const source = fs.readFileSync('src/features/attachments/attachment.types.ts','utf8');
+new Function('module','exports',ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(mod,mod.exports);
+const {validateAttachment, MAX_ATTACHMENT_BYTES, attachmentSize} = mod.exports;
+assert.deepEqual(validateAttachment({name:'Document été.pdf',size:1024,type:'application/pdf'}),{file_name:'Document été.pdf',size_bytes:1024,content_type:'application/pdf'});
+assert.equal(validateAttachment({name:'folder/document\n.txt',size:2}).file_name,'folder_document_.txt');
+assert.equal(validateAttachment({name:'test',size:2,type:'bad\r\nvalue'}).content_type,'application/octet-stream');
+for(const size of [0,-1,NaN,1.5,MAX_ATTACHMENT_BYTES+1])assert.throws(()=>validateAttachment({name:'a',size}));
+for(const name of ['', ' ', 'a'.repeat(256)])assert.throws(()=>validateAttachment({name,size:1}));
+assert.equal(validateAttachment({name:'limit',size:MAX_ATTACHMENT_BYTES}).size_bytes,MAX_ATTACHMENT_BYTES);
+assert.equal(attachmentSize(1024),'1.0 Ko');
+console.log('Attachment validation checks passed (names, MIME, empty files, exact size limit).');

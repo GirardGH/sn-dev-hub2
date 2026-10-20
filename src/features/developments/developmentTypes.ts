@@ -1,3 +1,4 @@
+import { ADDITIONAL_TYPES } from "./serviceNowForms";
 export const DEVELOPMENT_TYPES = [
   "business_rule",
   "script_include",
@@ -21,6 +22,7 @@ export const DEVELOPMENT_TYPES = [
   "widget",
   "record_producer",
   "catalog_item",
+  ...ADDITIONAL_TYPES.map(([value]) => value),
 ] as const;
 
 export type DevelopmentTypeName = (typeof DEVELOPMENT_TYPES)[number];
@@ -33,13 +35,14 @@ export interface DevelopmentTypeConfig {
 }
 
 export const DEVELOPMENT_TYPE_MAP: Record<DevelopmentTypeName, DevelopmentTypeConfig> = {
+  ...Object.fromEntries(ADDITIONAL_TYPES.map(([value, label, snTable]) => [value, { value, label, snTable, defaultConfig: {} }])) as Record<(typeof ADDITIONAL_TYPES)[number][0], DevelopmentTypeConfig>,
   business_rule: {
     value: "business_rule",
     label: "Business Rule",
     snTable: "sys_script",
     defaultConfig: {
       name: "", table: "", when: "before", insert: false, update: false,
-      delete: false, query: false, condition: "", script: "", active: true, order: 100,
+      delete: false, query: false, advanced: true, filter_condition: "", condition: "", _snFormVersion: 2, script: "", active: true, order: 100,
     },
   },
   script_include: {
