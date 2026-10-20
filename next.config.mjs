@@ -2,7 +2,7 @@
 const nextConfig = {
   experimental: {
     serverActions: {
-      allowedOrigins: ["localhost:3000"],
+      // Same-origin validation is used locally and on the deployed domain.
       bodySizeLimit: "100mb",
     },
   },

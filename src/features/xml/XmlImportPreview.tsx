@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { CheckSquare, Square, FileCode2, ExternalLink, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -26,6 +27,7 @@ export function XmlImportPreview({
   storyId,
   checking,
 }: Props) {
+  const t = useT();
   function toggleAll() {
     const allSelected = components.every((c) => c.selected);
     onChange(components.map((c) => ({ ...c, selected: !allSelected })));
@@ -57,13 +59,11 @@ export function XmlImportPreview({
           <FileCode2 className="w-4 h-4 text-sn-accent" />
           <span className="text-sm font-medium text-sn-text">{filename}</span>
           <span className="text-xs text-sn-text-muted">
-            — {components.length} composant(s) détecté(s)
-          </span>
+            — {components.length} {t("composant(s) détecté(s)")}</span>
           {checking && (
             <span className="flex items-center gap-1 text-xs text-amber-600">
               <Loader2 className="w-3 h-3 animate-spin" />
-              Vérification des doublons…
-            </span>
+              {t("Vérification des doublons…")}</span>
           )}
         </div>
         <button
@@ -88,34 +88,29 @@ export function XmlImportPreview({
                 <Checkbox checked={allSelected} onChange={toggleAll} />
               </th>
               <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
-                Title
-              </th>
+                {t("Title")}</th>
               <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
-                Type
-              </th>
+                {t("Type")}</th>
               <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
                 {checking ? (
                   <span className="flex items-center gap-1">
-                    Action <Loader2 className="w-3 h-3 animate-spin text-amber-500" />
+                    {t("Action")}<Loader2 className="w-3 h-3 animate-spin text-amber-500" />
                   </span>
                 ) : (
-                  "Action"
+                  t("Action")
                 )}
               </th>
               <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
-                XML Tag
-              </th>
+                {t("XML Tag")}</th>
               <th className="px-3 py-2 text-left text-xs font-semibold text-sn-text-muted uppercase tracking-wide">
-                Target Table
-              </th>
+                {t("Target Table")}</th>
             </tr>
           </thead>
           <tbody>
             {components.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-3 py-6 text-center text-sm text-sn-text-muted">
-                  No components detected.
-                </td>
+                  {t("No components detected.")}</td>
               </tr>
             ) : (
               components.map((comp, index) => {
@@ -144,7 +139,7 @@ export function XmlImportPreview({
                         value={comp.title}
                         onChange={(e) => updateTitle(index, e.target.value)}
                         className="w-full text-sm border-0 border-b border-transparent hover:border-sn-border focus:border-sn-accent outline-none bg-transparent py-0.5"
-                        placeholder="Component name..."
+                        placeholder={t("Component name...")}
                       />
                     </td>
                     <td className="px-3 py-2">
@@ -162,7 +157,7 @@ export function XmlImportPreview({
                         )}
                         {DEVELOPMENT_TYPE_OPTIONS.map((opt) => (
                           <option key={opt.value} value={opt.value}>
-                            {opt.label}
+                            {t(opt.label)}
                           </option>
                         ))}
                       </select>
@@ -177,7 +172,7 @@ export function XmlImportPreview({
                                 : "bg-green-50 text-green-700 border-green-200"
                             }`}
                           >
-                            {isExisting ? "Existant" : "Nouveau"}
+                            {isExisting ? "Existant" : t("Nouveau")}
                           </span>
                         )}
                         <select
@@ -187,9 +182,9 @@ export function XmlImportPreview({
                           }
                           className="text-xs border border-sn-border rounded px-1.5 py-1 bg-white outline-none focus:border-sn-accent"
                         >
-                          <option value="create">Créer</option>
-                          <option value="update">Mettre à jour</option>
-                          <option value="skip">Ignorer</option>
+                          <option value="create">{t("Créer")}</option>
+                          <option value="update">{t("Mettre à jour")}</option>
+                          <option value="skip">{t("Ignorer")}</option>
                         </select>
                         {comp.existingId && clientId && storyId && (
                           <a

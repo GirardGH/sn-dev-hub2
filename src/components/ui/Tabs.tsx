@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { cn } from "@/lib/utils";
 
@@ -16,6 +17,7 @@ interface TabsProps {
 }
 
 export function Tabs({ tabs, activeTab, onChange, className }: TabsProps) {
+  const t = useT();
   return (
     <div className={cn("flex border-b border-sn-border", className)}>
       {tabs.map((tab) => (
@@ -29,7 +31,7 @@ export function Tabs({ tabs, activeTab, onChange, className }: TabsProps) {
               : "border-transparent text-sn-text-muted hover:text-sn-text hover:border-sn-border-dark"
           )}
         >
-          {tab.label}
+          {t(tab.label)}
           {tab.count !== undefined && (
             <span
               className={cn(

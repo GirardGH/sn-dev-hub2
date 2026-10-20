@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
@@ -14,6 +15,7 @@ interface ModalProps {
 }
 
 export function Modal({ open, onClose, title, children, size = "md", footer }: ModalProps) {
+  const t = useT();
   const overlayRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -33,6 +35,9 @@ export function Modal({ open, onClose, title, children, size = "md", footer }: M
       onClick={(e) => { if (e.target === overlayRef.current) onClose(); }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title ? t(title) : undefined}
         className={cn(
           "bg-white rounded shadow-xl flex flex-col max-h-[90vh]",
           {
@@ -45,8 +50,9 @@ export function Modal({ open, onClose, title, children, size = "md", footer }: M
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-sn-border flex-shrink-0">
-          {title && <h2 className="text-sm font-semibold text-sn-text">{title}</h2>}
+          {title && <h2 className="text-sm font-semibold text-sn-text">{title ? t(title) : title}</h2>}
           <button
+            aria-label={t("Close")}
             onClick={onClose}
             className="ml-auto w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-sn-text-muted hover:text-sn-text transition-colors"
           >

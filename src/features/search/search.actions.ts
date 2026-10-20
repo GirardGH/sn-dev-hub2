@@ -1,6 +1,6 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createSpaceSupabaseClient } from "@/lib/supabaseSpace";
 
 export interface ClientResult {
   id: string;
@@ -35,7 +35,7 @@ export async function searchAll(query: string): Promise<SearchAllResult> {
     return { clients: [], stories: [], developments: [] };
   }
 
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   // .or() uses PostgREST URL filter syntax where * is the wildcard for ilike (not %)
   const safeQ = q.replace(/[*%]/g, "\\$&");
   const pattern = `*${safeQ}*`;

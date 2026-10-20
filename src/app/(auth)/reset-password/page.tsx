@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,7 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 export default function ResetPasswordPage() {
+  const t = useT();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -42,7 +44,7 @@ export default function ResetPasswordPage() {
     setLoading(false);
 
     if (error) {
-      toast.error("Erreur : " + error.message);
+      toast.error(t("Erreur : ") + error.message);
       return;
     }
 
@@ -59,8 +61,8 @@ export default function ResetPasswordPage() {
             <Layers className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-sn-text">SN Dev Hub</h1>
-            <p className="text-xs text-sn-text-muted">ServiceNow Manager</p>
+            <h1 className="text-xl font-bold text-sn-text">{t("SN Dev Hub")}</h1>
+            <p className="text-xs text-sn-text-muted">{t("ServiceNow Manager")}</p>
           </div>
         </div>
 
@@ -70,28 +72,26 @@ export default function ResetPasswordPage() {
               <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
                 <CheckCircle2 className="w-6 h-6 text-green-600" />
               </div>
-              <p className="text-sm font-semibold text-sn-text">Mot de passe mis à jour !</p>
-              <p className="text-xs text-sn-text-muted">Redirection vers la connexion…</p>
+              <p className="text-sm font-semibold text-sn-text">{t("Mot de passe mis à jour !")}</p>
+              <p className="text-xs text-sn-text-muted">{t("Redirection vers la connexion…")}</p>
             </div>
           ) : (
             <>
               <h2 className="text-base font-semibold text-sn-text mb-1">
-                Nouveau mot de passe
-              </h2>
+                {t("Nouveau mot de passe")}</h2>
               <p className="text-xs text-sn-text-muted mb-4">
-                Choisissez un nouveau mot de passe pour votre compte.
-              </p>
+                {t("Choisissez un nouveau mot de passe pour votre compte.")}</p>
 
               <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
                 <Input
-                  label="Nouveau mot de passe"
+                  label={t("Nouveau mot de passe")}
                   type="password"
                   placeholder="••••••••"
                   error={errors.password?.message}
                   {...register("password")}
                 />
                 <Input
-                  label="Confirmer le mot de passe"
+                  label={t("Confirmer le mot de passe")}
                   type="password"
                   placeholder="••••••••"
                   error={errors.confirmPassword?.message}
@@ -105,8 +105,7 @@ export default function ResetPasswordPage() {
                   className="w-full mt-1"
                   size="lg"
                 >
-                  Mettre à jour
-                </Button>
+                  {t("Mettre à jour")}</Button>
               </form>
             </>
           )}

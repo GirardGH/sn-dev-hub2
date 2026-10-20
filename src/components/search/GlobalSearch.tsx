@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -19,6 +20,7 @@ function devTypeLabel(type: string): string {
 }
 
 export function GlobalSearch() {
+  const t = useT();
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchAllResult | null>(null);
@@ -99,14 +101,14 @@ export function GlobalSearch() {
   const noResults = results !== null && !loading && total === 0;
 
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative min-w-0 w-full">
       {/* Search input */}
       <div
         className={cn(
-          "flex items-center gap-2 h-7 px-2.5 rounded-sm border transition-colors",
+          "flex items-center gap-2 h-9 px-3 rounded-lg border transition-colors",
           open || query
-            ? "bg-white/20 border-white/40 w-64"
-            : "bg-white/10 border-white/15 w-52",
+            ? "bg-white/20 border-white/40 w-full"
+            : "bg-white/10 border-white/15 w-full",
           "transition-all duration-150"
         )}
       >
@@ -126,11 +128,13 @@ export function GlobalSearch() {
           onKeyDown={(e) => {
             if (e.key === "Escape") clear();
           }}
-          placeholder="Search clients, stories, developments..."
-          className="flex-1 min-w-0 bg-transparent text-white/90 text-[12px] placeholder:text-white/40 outline-none"
+          aria-label={t("Rechercher clients, stories et développements")}
+          placeholder={t("Rechercher…")}
+          className="flex-1 min-w-0 bg-transparent text-white/90 text-[13px] placeholder:text-white/40 outline-none"
         />
         {query && (
           <button
+            aria-label={t("Effacer la recherche")}
             onClick={clear}
             className="text-white/40 hover:text-white/80 transition-colors flex-shrink-0"
           >
@@ -141,19 +145,18 @@ export function GlobalSearch() {
 
       {/* Dropdown */}
       {open && (
-        <div className="absolute top-full left-0 mt-1 w-[420px] bg-white border border-sn-border rounded-sm shadow-2xl z-50 overflow-hidden">
+        <div className="fixed inset-x-4 top-16 sm:absolute sm:inset-x-auto sm:top-full sm:left-0 mt-2 sm:w-[480px] max-w-[calc(100vw-2rem)] bg-white border border-sn-border rounded-xl shadow-2xl z-50 overflow-hidden">
           {/* Loading */}
           {loading && (
             <div className="flex items-center justify-center gap-2 py-5 text-sn-text-muted text-[13px]">
               <Loader2 className="w-4 h-4 animate-spin text-sn-accent" />
-              Searching…
-            </div>
+              {t("Searching…")}</div>
           )}
 
           {/* No results */}
           {noResults && (
             <div className="py-6 text-center text-[13px] text-sn-text-muted">
-              No results found for <span className="font-semibold text-sn-text">&quot;{query}&quot;</span>
+              {t("No results found for")}<span className="font-semibold text-sn-text">&quot;{query}&quot;</span>
             </div>
           )}
 
@@ -167,8 +170,7 @@ export function GlobalSearch() {
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-sn-table-header border-b border-sn-border sticky top-0">
                     <Building2 className="w-3 h-3 text-sn-accent" />
                     <span className="text-[10px] font-bold text-sn-text-muted uppercase tracking-widest">
-                      Clients
-                    </span>
+                      {t("Clients")}</span>
                   </div>
                   {results!.clients.map((c) => (
                     <button
@@ -199,8 +201,7 @@ export function GlobalSearch() {
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-sn-table-header border-b border-sn-border sticky top-0">
                     <BookOpen className="w-3 h-3 text-sn-accent" />
                     <span className="text-[10px] font-bold text-sn-text-muted uppercase tracking-widest">
-                      Stories
-                    </span>
+                      {t("Stories")}</span>
                   </div>
                   {results!.stories.map((s) => (
                     <button
@@ -235,8 +236,7 @@ export function GlobalSearch() {
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-sn-table-header border-b border-sn-border sticky top-0">
                     <Code2 className="w-3 h-3 text-sn-accent" />
                     <span className="text-[10px] font-bold text-sn-text-muted uppercase tracking-widest">
-                      Developments
-                    </span>
+                      {t("Developments")}</span>
                   </div>
                   {results!.developments.map((d) => (
                     <button
@@ -250,7 +250,7 @@ export function GlobalSearch() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-[13px] font-medium text-sn-text group-hover:text-sn-accent truncate">
-                          {devTypeLabel(d.development_type)} — {d.title}
+                          {t(devTypeLabel(d.development_type))} — {d.title}
                         </p>
                       </div>
                     </button>
@@ -264,7 +264,7 @@ export function GlobalSearch() {
           {(hasResults || noResults) && !loading && (
             <div className="px-3 py-1.5 border-t border-sn-border bg-sn-table-header">
               <p className="text-[10px] text-sn-text-muted">
-                {hasResults ? `${total} result${total > 1 ? "s" : ""}` : "No results"} for &quot;{query}&quot;
+                {hasResults ? `${total} result${total > 1 ? "s" : ""}` : "No results"} {t("for \"")}{query}&quot;
               </p>
             </div>
           )}

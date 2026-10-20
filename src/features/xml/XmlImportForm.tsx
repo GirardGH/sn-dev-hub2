@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -40,6 +41,7 @@ function getSysIdFromConfig(config: Record<string, unknown>): string | null {
 }
 
 export function XmlImportFormClient({ clients, stories, defaultClientId, defaultStoryId }: Props) {
+  const t = useT();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -56,12 +58,12 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
     : stories;
 
   const clientOptions = [
-    { value: "", label: "— Select client —" },
+    { value: "", label: t("— Select client —") },
     ...clients.map((c) => ({ value: c.id, label: c.name })),
   ];
 
   const storyOptions = [
-    { value: "", label: "— Select story —" },
+    { value: "", label: t("— Select story —") },
     ...filteredStories.map((s) => ({ value: s.id, label: s.title })),
   ];
 
@@ -112,7 +114,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
 
   function processFile(file: File) {
     if (!file.name.endsWith(".xml")) {
-      toast.error("Veuillez sélectionner un fichier XML.");
+      toast.error(t("Veuillez sélectionner un fichier XML."));
       return;
     }
 
@@ -140,11 +142,11 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
 
   async function handleImport() {
     if (!selectedStoryId) {
-      toast.error("Veuillez sélectionner une story.");
+      toast.error(t("Veuillez sélectionner une story."));
       return;
     }
     if (!selectedClientId) {
-      toast.error("Veuillez sélectionner un client.");
+      toast.error(t("Veuillez sélectionner un client."));
       return;
     }
     if (!parseResult) return;
@@ -153,7 +155,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
       (c) => c.selected && (c.importAction ?? "create") !== "skip"
     );
     if (activeComponents.length === 0) {
-      toast.error("Sélectionnez au moins un composant à importer (hors ignorés).");
+      toast.error(t("Sélectionnez au moins un composant à importer (hors ignorés)."));
       return;
     }
 
@@ -194,7 +196,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
 
       router.push(`/xml-imports/${xmlImport.id}`);
     } catch (err) {
-      toast.error("Erreur lors de l'import : " + String(err));
+      toast.error(t("Erreur lors de l'import : ") + String(err));
     } finally {
       setImporting(false);
     }
@@ -223,8 +225,8 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
     <div className="max-w-5xl">
       <Breadcrumbs
         items={[
-          { label: "XML Imports", href: "/xml-imports" },
-          { label: "New Import" },
+          { label: t("XML Imports"), href: "/xml-imports" },
+          { label: t("New Import") },
         ]}
         className="mb-3"
       />
@@ -233,7 +235,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
         <div className="flex items-center justify-between px-4 py-3 border-b border-sn-border">
           <div className="flex items-center gap-2">
             <FileCode2 className="w-5 h-5 text-sn-accent" />
-            <h1 className="text-base font-semibold text-sn-text">Import XML ServiceNow</h1>
+            <h1 className="text-base font-semibold text-sn-text">{t("Import XML ServiceNow")}</h1>
           </div>
         </div>
 
@@ -241,7 +243,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
           {/* Context selection */}
           <div className="grid grid-cols-2 gap-4 p-3 bg-sn-bg rounded border border-sn-border">
             <Select
-              label="Client *"
+              label={t("Client *")}
               options={clientOptions}
               value={selectedClientId}
               onChange={(e) => {
@@ -250,7 +252,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
               }}
             />
             <Select
-              label="Story *"
+              label={t("Story *")}
               options={storyOptions}
               value={selectedStoryId}
               onChange={(e) => setSelectedStoryId(e.target.value)}
@@ -275,13 +277,11 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
               onDragLeave={() => setDragOver(false)}
             >
               <Upload className="w-8 h-8 mx-auto text-sn-text-muted mb-2" />
-              <p className="text-sm font-medium text-sn-text">Drop your XML file here</p>
+              <p className="text-sm font-medium text-sn-text">{t("Drop your XML file here")}</p>
               <p className="text-xs text-sn-text-muted mt-1">
-                ServiceNow update set export (.xml)
-              </p>
+                {t("ServiceNow update set export (.xml)")}</p>
               <Button variant="secondary" size="sm" className="mt-4">
-                Browse file
-              </Button>
+                {t("Browse file")}</Button>
               <input
                 ref={fileRef}
                 type="file"
@@ -297,7 +297,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
             <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded text-sm">
               <AlertCircle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="font-medium text-yellow-800">Avertissements</p>
+                <p className="font-medium text-yellow-800">{t("Avertissements")}</p>
                 <ul className="mt-1 text-xs text-yellow-700 space-y-0.5">
                   {parseResult.errors.map((e, i) => (
                     <li key={i}>• {e}</li>
@@ -327,8 +327,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
                 <div className="flex flex-col gap-0.5">
                   <p className="text-xs text-sn-text-muted">
                     {components.filter((c) => c.selected).length} / {components.length}{" "}
-                    composant(s) sélectionné(s)
-                  </p>
+                    {t("composant(s) sélectionné(s)")}</p>
                   {!checkingDuplicates && importSummaryLine && (
                     <p className="text-xs text-sn-text-muted">{importSummaryLine}</p>
                   )}
@@ -341,8 +340,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
                       setComponents([]);
                     }}
                   >
-                    Change file
-                  </Button>
+                    {t("Change file")}</Button>
                   <Button
                     onClick={handleImport}
                     loading={importing}

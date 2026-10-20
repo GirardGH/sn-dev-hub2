@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -80,6 +81,7 @@ interface Props {
 }
 
 export function GenericConfigFields({ config, onChange, readOnly }: Props) {
+  const t = useT();
   function update(key: string, value: unknown) {
     onChange({ ...config, [key]: value });
   }
@@ -131,7 +133,7 @@ export function GenericConfigFields({ config, onChange, readOnly }: Props) {
     <>
       {/* ── Short scalar fields + booleans + long text ── */}
       {hasMainSection && (
-        <FormSection title="Configuration ServiceNow">
+        <FormSection title={t("Configuration ServiceNow")}>
           {shortEntries.map(([key, value]) => (
             <Input
               key={key}
@@ -185,7 +187,7 @@ export function GenericConfigFields({ config, onChange, readOnly }: Props) {
 
       {/* ── System metadata (dimmed) ── */}
       {metaEntries.length > 0 && (
-        <FormSection title="Métadonnées système">
+        <FormSection title={t("Métadonnées système")}>
           {metaEntries.map(([key, value]) => (
             <Input
               key={key}

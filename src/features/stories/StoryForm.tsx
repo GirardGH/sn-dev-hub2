@@ -1,4 +1,6 @@
 "use client";
+import { CopyToSpace } from "@/features/spaces/CopyToSpace";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -54,6 +56,7 @@ interface Props {
 }
 
 export function StoryFormClient({ story, developments = [], clientId, client, allClients }: Props) {
+  const t = useT();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -89,7 +92,7 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
     const firstMsg = Object.values(errs).find(
       (e): e is { message: string } => typeof e === "object" && e !== null && "message" in e
     );
-    toast.error(firstMsg?.message ?? "Formulaire invalide — vérifiez les champs.");
+    toast.error(firstMsg?.message ? t(firstMsg.message) : t("Formulaire invalide — vérifiez les champs."));
   }
 
   async function onSubmit(values: StoryFormValues) {
@@ -97,15 +100,15 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
     try {
       if (isNew) {
         const created = await createStory({ ...values, client_id: resolvedClientId });
-        toast.success("Story créée !");
+        toast.success(t("Story créée !"));
         router.push(`/clients/${resolvedClientId}/stories/${created.id}`);
       } else {
         await updateStory(story.id, values);
-        toast.success("Story sauvegardée !");
+        toast.success(t("Story sauvegardée !"));
         router.refresh();
       }
     } catch (err) {
-      toast.error("Erreur : " + String(err));
+      toast.error(t("Erreur : ") + String(err));
     } finally {
       setSaving(false);
     }
@@ -115,10 +118,10 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
     setDeleting(true);
     try {
       await deleteStory(story!.id, resolvedClientId);
-      toast.success("Story supprimée.");
+      toast.success(t("Story supprimée."));
       router.push(`/clients/${resolvedClientId}`);
     } catch (err) {
-      toast.error("Erreur : " + String(err));
+      toast.error(t("Erreur : ") + String(err));
     } finally {
       setDeleting(false);
       setConfirmDelete(false);
@@ -127,7 +130,8 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
 
   const devRelatedList = !isNew ? (
     <RelatedList
-      title="Developments"
+        copyKind="development"
+      title={t("Developments")}
       data={developments}
       columns={devColumns}
       onRowClick={(row) =>
@@ -137,10 +141,10 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
         router.push(`/clients/${resolvedClientId}/stories/${story!.id}/developments/new`)
       }
       onRefresh={() => router.refresh()}
-      emptyMessage="No developments yet."
+      emptyMessage={t("No developments yet.")}
       onDeleteSelected={async (ids) => {
         await deleteDevelopments(ids, story!.id, resolvedClientId);
-        toast.success(`${ids.length} développement${ids.length > 1 ? "s" : ""} supprimé${ids.length > 1 ? "s" : ""}.`);
+        toast.success(t("{count} developments deleted.", { count: ids.length }));
         router.refresh();
       }}
       extraActions={
@@ -154,8 +158,7 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
             )
           }
         >
-          Import XML
-        </Button>
+          {t("Import XML")}</Button>
       }
     />
   ) : undefined;
@@ -163,8 +166,9 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
   return (
     <>
       <RecordForm
+        headerActions={!isNew && <CopyToSpace kind="story" id={story.id} />}
         wide
-        title={isNew ? "New Story" : story.title}
+        title={isNew ? t("New Story") : story.title}
         subtitle={
           !isNew && story.reference
             ? story.reference
@@ -174,10 +178,10 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
         }
         status={!isNew ? story.status : undefined}
         breadcrumbs={[
-          { label: "Clients", href: "/clients" },
+          { label: t("Clients"), href: "/clients" },
           { label: clientName || "Client", href: `/clients/${resolvedClientId}` },
-          { label: "Stories" },
-          { label: isNew ? "New" : (story.reference || story.title) },
+          { label: t("Stories") },
+          { label: isNew ? t("New") : (story.reference || story.title) },
         ]}
         onSave={handleSubmit(onSubmit, onInvalid)}
         onDelete={!isNew ? () => setConfirmDelete(true) : undefined}
@@ -189,12 +193,12 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
         backHref={`/clients/${resolvedClientId}`}
         relatedLists={devRelatedList}
       >
-        <FormSection title="Identification">
+        <FormSection title={t("Identification")}>
           {allClients && (
             <Select
-              label="Client *"
+              label={t("Client *")}
               options={[
-                { value: "", label: "— Select a client —" },
+                { value: "", label: t("— Select a client —") },
                 ...allClients.map((c) => ({ value: c.id, label: c.name + (c.code ? ` (${c.code})` : "") })),
               ]}
               value={pickedClientId}
@@ -205,31 +209,31 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
             />
           )}
           <Input
-            label="Reference"
-            placeholder="STORY-001"
+            label={t("Reference")}
+            placeholder={t("STORY-001")}
             {...register("reference")}
           />
           <Input
-            label="Title *"
-            placeholder="Gestion notifications ELS"
+            label={t("Title *")}
+            placeholder={t("Gestion notifications ELS")}
             error={errors.title?.message}
             {...register("title")}
           />
         </FormSection>
 
-        <FormSection title="Planning">
+        <FormSection title={t("Planning")}>
           <Select
-            label="Status"
-            options={STATUS_OPTIONS}
+            label={t("Status")}
+            options={STATUS_OPTIONS.map(option => ({ ...option, label: t(option.label) }))}
             {...register("status")}
           />
           <Select
-            label="Priority"
-            options={PRIORITY_OPTIONS}
+            label={t("Priority")}
+            options={PRIORITY_OPTIONS.map(option => ({ ...option, label: t(option.label) }))}
             {...register("priority")}
           />
           <Input
-            label="Estimated UO"
+            label={t("Estimated UO")}
             type="number"
             step="0.5"
             placeholder="0"
@@ -240,20 +244,20 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
           />
         </FormSection>
 
-        <FormSection title="Description" columns={1}>
+        <FormSection title={t("Description")} columns={1}>
           <Textarea
-            label="Description"
-            placeholder="Story description..."
+            label={t("Description")}
+            placeholder={t("Story description...")}
             {...register("description")}
           />
           <Textarea
-            label="Functional Need"
-            placeholder="What does the user need?"
+            label={t("Functional Need")}
+            placeholder={t("What does the user need?")}
             {...register("functional_need")}
           />
           <Textarea
-            label="Technical Solution"
-            placeholder="How will it be implemented?"
+            label={t("Technical Solution")}
+            placeholder={t("How will it be implemented?")}
             {...register("technical_solution")}
           />
         </FormSection>
@@ -264,8 +268,8 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDelete}
         loading={deleting}
-        title="Delete story"
-        message={`Delete "${story?.title}"? All associated developments will also be deleted.`}
+        title={t("Delete story")}
+        message={t('Delete "{name}"? All associated developments will also be deleted.', { name: story?.title ?? "" })}
       />
     </>
   );

@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
@@ -20,6 +21,7 @@ function isInternalNavigationLink(anchor: HTMLAnchorElement) {
 }
 
 export function NavigationFeedback() {
+  const t = useT();
   const pathname = usePathname();
   const [visible, setVisible] = useState(false);
   const shownAtRef = useRef(0);
@@ -82,12 +84,12 @@ export function NavigationFeedback() {
   if (!visible) return null;
 
   return (
-    <div className="fixed left-56 right-0 top-12 bottom-0 z-[60] flex items-center justify-center bg-sn-bg/55 backdrop-blur-[3px]">
-      <div className="flex items-center gap-3 rounded-sm border border-sn-border bg-white/95 px-4 py-3 shadow-xl shadow-slate-900/10">
+    <div className="workspace-navigation-overlay fixed right-0 top-16 bottom-0 z-[60] flex items-center justify-center bg-sn-bg/55 backdrop-blur-[3px]">
+      <div className="flex items-center gap-3 rounded-xl border border-sn-border bg-white/95 px-4 py-3 shadow-xl shadow-slate-900/10">
         <div className="sn-navigation-spinner" aria-hidden="true" />
         <div>
-          <p className="text-[13px] font-semibold text-sn-text leading-tight">Loading</p>
-          <p className="text-[11px] text-sn-text-muted leading-tight mt-0.5">Opening record...</p>
+          <p className="text-[13px] font-semibold text-sn-text leading-tight">{t("Chargement")}</p>
+          <p className="text-[11px] text-sn-text-muted leading-tight mt-0.5">{t("Ouverture en cours…")}</p>
         </div>
       </div>
     </div>

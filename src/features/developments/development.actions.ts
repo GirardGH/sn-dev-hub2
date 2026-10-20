@@ -1,12 +1,12 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createSpaceSupabaseClient } from "@/lib/supabaseSpace";
 import { revalidatePath } from "next/cache";
 import type { DevelopmentFormValues, Development } from "./development.types";
 import type { Json } from "@/lib/database.types";
 
 export async function getDevelopments(): Promise<Development[]> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("developments")
     .select("*, stories:story_id(id, title), clients:client_id(id, name)")
@@ -16,7 +16,7 @@ export async function getDevelopments(): Promise<Development[]> {
 }
 
 export async function getDevelopmentsByStory(storyId: string): Promise<Development[]> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("developments")
     .select("*")
@@ -27,7 +27,7 @@ export async function getDevelopmentsByStory(storyId: string): Promise<Developme
 }
 
 export async function getDevelopmentsByClient(clientId: string): Promise<Development[]> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("developments")
     .select("*, stories:story_id(id, title)")
@@ -38,7 +38,7 @@ export async function getDevelopmentsByClient(clientId: string): Promise<Develop
 }
 
 export async function getDevelopment(id: string): Promise<Development> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("developments")
     .select("*, stories:story_id(id, title, client_id), clients:client_id(id, name)")
@@ -49,7 +49,7 @@ export async function getDevelopment(id: string): Promise<Development> {
 }
 
 export async function createDevelopment(values: DevelopmentFormValues): Promise<Development> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
@@ -78,7 +78,7 @@ export async function createDevelopment(values: DevelopmentFormValues): Promise<
 }
 
 export async function updateDevelopment(id: string, values: DevelopmentFormValues): Promise<Development> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("developments")
     .update({
@@ -102,7 +102,7 @@ export async function updateDevelopment(id: string, values: DevelopmentFormValue
 }
 
 export async function deleteDevelopment(id: string, storyId: string, clientId: string): Promise<void> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { error } = await supabase.from("developments").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/developments");
@@ -111,7 +111,7 @@ export async function deleteDevelopment(id: string, storyId: string, clientId: s
 
 export async function deleteDevelopments(ids: string[], storyId?: string, clientId?: string): Promise<void> {
   if (ids.length === 0) return;
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { error } = await supabase.from("developments").delete().in("id", ids);
   if (error) throw new Error(error.message);
   revalidatePath("/developments");

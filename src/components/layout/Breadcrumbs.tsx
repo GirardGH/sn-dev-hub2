@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import Link from "next/link";
 import { ChevronRight, Home } from "lucide-react";
@@ -15,13 +16,15 @@ interface BreadcrumbsProps {
 }
 
 export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
+  const t = useT();
   return (
     <nav
-      aria-label="Breadcrumb"
-      className={cn("flex items-center gap-0.5 text-[12px] text-sn-text-muted", className)}
+      aria-label={t("Breadcrumb")}
+      className={cn("flex items-center gap-0.5 overflow-x-auto whitespace-nowrap text-[12px] text-sn-text-muted", className)}
     >
       <Link
         href="/dashboard"
+        aria-label={t("Accueil")}
         className="flex items-center p-1 hover:text-sn-accent transition-colors rounded-sm"
       >
         <Home className="w-3.5 h-3.5" />

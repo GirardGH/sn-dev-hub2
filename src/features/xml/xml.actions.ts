@@ -1,12 +1,12 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createSpaceSupabaseClient } from "@/lib/supabaseSpace";
 import { revalidatePath } from "next/cache";
 import type { ParsedComponent, XmlImport } from "./xml.types";
 import type { Json } from "@/lib/database.types";
 
 export async function getXmlImports(): Promise<XmlImport[]> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("xml_imports")
     .select("*, clients:client_id(id, name), stories:story_id(id, title)")
@@ -16,7 +16,7 @@ export async function getXmlImports(): Promise<XmlImport[]> {
 }
 
 export async function getXmlImport(id: string): Promise<XmlImport> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("xml_imports")
     .select("*, clients:client_id(id, name), stories:story_id(id, title)")
@@ -33,7 +33,7 @@ export async function createXmlImport(params: {
   story_id?: string;
   parsed_summary?: Record<string, unknown>;
 }): Promise<XmlImport> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
@@ -64,7 +64,7 @@ export async function checkExistingDevelopments(params: {
     sysId?: string | null;
   }>;
 }): Promise<Array<{ existingId: string | null; matchedBy: "sys_id" | "title_type" | null }>> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
@@ -72,8 +72,7 @@ export async function checkExistingDevelopments(params: {
     .from("developments")
     .select("id, title, development_type, config")
     .eq("story_id", params.storyId)
-    .eq("client_id", params.clientId)
-    .eq("user_id", user.id);
+    .eq("client_id", params.clientId);
 
   if (error) throw new Error(error.message);
 
@@ -111,7 +110,7 @@ export async function createDevelopmentsFromXmlImport(params: {
   clientId: string;
   components: ParsedComponent[];
 }): Promise<{ created: number; updated: number; skipped: number }> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
@@ -158,8 +157,7 @@ export async function createDevelopmentsFromXmlImport(params: {
         raw_xml: c.rawXml,
         xml_import_id: params.xmlImportId,
       })
-      .eq("id", c.existingId!)
-      .eq("user_id", user.id);
+      .eq("id", c.existingId!);
     if (error) throw new Error(error.message);
   }
 
@@ -187,7 +185,7 @@ export async function updateXmlImportAnalysis(
   id: string,
   parsedSummary: Record<string, unknown>
 ): Promise<void> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { error } = await supabase
     .from("xml_imports")
     .update({ parsed_summary: parsedSummary as unknown as Json })
@@ -200,7 +198,7 @@ export async function updateXmlImportAnalysis(
 export async function getDevelopmentsByXmlImport(
   xmlImportId: string
 ): Promise<Array<{ id: string; title: string; development_type: string; story_id: string; client_id: string }>> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("developments")
     .select("id, title, development_type, story_id, client_id")
@@ -211,7 +209,7 @@ export async function getDevelopmentsByXmlImport(
 }
 
 export async function deleteXmlImport(id: string): Promise<void> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { error } = await supabase.from("xml_imports").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/xml-imports");
@@ -219,7 +217,7 @@ export async function deleteXmlImport(id: string): Promise<void> {
 
 export async function deleteXmlImports(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { error } = await supabase.from("xml_imports").delete().in("id", ids);
   if (error) throw new Error(error.message);
   revalidatePath("/xml-imports");

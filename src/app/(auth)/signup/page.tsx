@@ -1,4 +1,6 @@
 "use client";
+import { GoogleSignIn } from "@/features/auth/GoogleSignIn";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -25,6 +27,7 @@ const schema = z
 type FormValues = z.infer<typeof schema>;
 
 export default function SignupPage() {
+  const t = useT();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
 
@@ -48,11 +51,11 @@ export default function SignupPage() {
     setLoading(false);
 
     if (error) {
-      toast.error("Inscription échouée : " + error.message);
+      toast.error(t("Inscription échouée : ") + error.message);
       return;
     }
 
-    toast.success("Compte créé ! Vérifiez votre email.");
+    toast.success(t("Compte créé ! Vérifiez votre email."));
     router.push("/login");
   }
 
@@ -64,37 +67,38 @@ export default function SignupPage() {
             <Layers className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-sn-text">SN Dev Hub</h1>
-            <p className="text-xs text-sn-text-muted">ServiceNow Manager</p>
+            <h1 className="text-xl font-bold text-sn-text">{t("SN Dev Hub")}</h1>
+            <p className="text-xs text-sn-text-muted">{t("ServiceNow Manager")}</p>
           </div>
         </div>
 
         <div className="bg-white border border-sn-border rounded shadow-sm p-6">
-          <h2 className="text-base font-semibold text-sn-text mb-4">Create an account</h2>
+          <h2 className="text-base font-semibold text-sn-text mb-4">{t("Create an account")}</h2>
+          <GoogleSignIn />
 
           <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
             <Input
-              label="Full name"
-              placeholder="John Doe"
+              label={t("Full name")}
+              placeholder={t("John Doe")}
               error={errors.full_name?.message}
               {...register("full_name")}
             />
             <Input
-              label="Email"
+              label={t("Email")}
               type="email"
-              placeholder="you@example.com"
+              placeholder={t("you@example.com")}
               error={errors.email?.message}
               {...register("email")}
             />
             <Input
-              label="Password"
+              label={t("Password")}
               type="password"
               placeholder="••••••••"
               error={errors.password?.message}
               {...register("password")}
             />
             <Input
-              label="Confirm password"
+              label={t("Confirm password")}
               type="password"
               placeholder="••••••••"
               error={errors.confirm_password?.message}
@@ -108,15 +112,13 @@ export default function SignupPage() {
               className="w-full mt-1"
               size="lg"
             >
-              Create account
-            </Button>
+              {t("Create account")}</Button>
           </form>
 
           <p className="text-xs text-center text-sn-text-muted mt-4">
-            Already have an account?{" "}
+            {t("Already have an account?")}{" "}
             <Link href="/login" className="text-sn-accent hover:underline">
-              Sign in
-            </Link>
+              {t("Sign in")}</Link>
           </p>
         </div>
       </div>

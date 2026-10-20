@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useState } from "react";
 import { Plus, X, Filter } from "lucide-react";
@@ -40,6 +41,7 @@ interface FilterBuilderProps {
 }
 
 export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }: FilterBuilderProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
 
   function addCondition() {
@@ -74,15 +76,14 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
         onClick={() => setOpen(!open)}
         className={activeCount > 0 ? "border-sn-accent text-sn-accent" : ""}
       >
-        Filters{activeCount > 0 && ` (${activeCount})`}
+        {t("Filters")}{activeCount > 0 && ` (${activeCount})`}
       </Button>
 
       {open && (
         <div className="absolute top-9 right-0 z-20 bg-white border border-sn-border rounded-sm shadow-lg w-[640px] max-w-[calc(100vw-1rem)] overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2 bg-sn-table-header border-b border-sn-border">
             <span className="text-[11px] font-semibold text-sn-text-muted uppercase tracking-widest">
-              Filters
-            </span>
+              {t("Filters")}</span>
             <button
               onClick={() => setOpen(false)}
               className="text-sn-text-muted hover:text-sn-text transition-colors"
@@ -93,7 +94,7 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
 
           <div className="p-3">
           {conditions.length === 0 && (
-            <p className="text-[12px] text-sn-text-muted py-2">No conditions. Click Add to start filtering.</p>
+            <p className="text-[12px] text-sn-text-muted py-2">{t("No conditions. Click Add to start filtering.")}</p>
           )}
 
           <div className="flex flex-col gap-2">
@@ -105,13 +106,12 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
                 <div key={cond.id} className="flex items-center gap-2">
                   {idx === 0 ? (
                     <span className="text-[11px] font-semibold text-sn-text-muted w-10 text-right flex-shrink-0 uppercase tracking-wide">
-                      Where
-                    </span>
+                      {t("Where")}</span>
                   ) : (
                     <Select
                       options={[
-                        { value: "and", label: "AND" },
-                        { value: "or", label: "OR" },
+                        { value: "and", label: t("AND") },
+                        { value: "or", label: t("OR") },
                       ]}
                       value={cond.connector ?? "and"}
                       onChange={(e) => updateCondition(cond.id, "connector", e.target.value)}
@@ -119,13 +119,13 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
                     />
                   )}
                   <Select
-                    options={fields.map((f) => ({ value: f.key, label: f.label }))}
+                    options={fields.map((f) => ({ value: f.key, label: t(f.label) }))}
                     value={cond.field}
                     onChange={(e) => updateCondition(cond.id, "field", e.target.value)}
                     className="w-36"
                   />
                   <Select
-                    options={OPERATORS}
+                    options={OPERATORS.map(option => ({ ...option, label: t(option.label) }))}
                     value={cond.operator}
                     onChange={(e) => updateCondition(cond.id, "operator", e.target.value)}
                     className="w-32"
@@ -133,17 +133,17 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
                   {!noValue &&
                     (fieldDef?.type === "select" && fieldDef.options ? (
                       <Select
-                        options={fieldDef.options}
+                        options={fieldDef.options?.map(option => ({ ...option, label: ["client", "story"].includes(fieldDef.key) ? option.label : t(option.label) }))}
                         value={cond.value}
                         onChange={(e) => updateCondition(cond.id, "value", e.target.value)}
                         className="flex-1"
-                        placeholder="Select..."
+                        placeholder={t("Select...")}
                       />
                     ) : (
                       <Input
                         value={cond.value}
                         onChange={(e) => updateCondition(cond.id, "value", e.target.value)}
-                        placeholder="Value..."
+                        placeholder={t("Value...")}
                         className="flex-1"
                       />
                     ))}
@@ -166,22 +166,19 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
               icon={<Plus className="w-3.5 h-3.5" />}
               onClick={addCondition}
             >
-              Add condition
-            </Button>
+              {t("Add condition")}</Button>
             <div className="flex gap-1.5">
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => { onClear(); setOpen(false); }}
               >
-                Clear
-              </Button>
+                {t("Clear")}</Button>
               <Button
                 size="sm"
                 onClick={() => { onApply(); setOpen(false); }}
               >
-                Apply
-              </Button>
+                {t("Apply")}</Button>
             </div>
           </div>
           </div>

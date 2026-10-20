@@ -1,3 +1,6 @@
+import { cookies } from "next/headers";
+import { LanguageProvider } from "@/i18n/LanguageProvider";
+import { isLanguage, LANGUAGE_COOKIE } from "@/i18n/translate";
 import type { Metadata } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
@@ -8,11 +11,13 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const savedLanguage = cookies().get(LANGUAGE_COOKIE)?.value;
+  const language = isLanguage(savedLanguage) ? savedLanguage : "fr";
   return (
-    <html lang="fr">
+    <html lang={language}>
       <body className="antialiased">
-        {children}
-        <Toaster position="top-right" richColors closeButton />
+        <LanguageProvider initialLanguage={language}>{children}
+        <Toaster position="top-right" richColors closeButton /></LanguageProvider>
       </body>
     </html>
   );

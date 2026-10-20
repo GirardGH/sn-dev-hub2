@@ -1,3 +1,5 @@
+"use client";
+import { useT } from "@/i18n/LanguageProvider";
 import { cn } from "@/lib/utils";
 
 type BadgeVariant =
@@ -48,7 +50,7 @@ export function Badge({ children, variant = "default", className }: BadgeProps) 
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 px-1.5 py-0.5 rounded-sm text-[11px] font-semibold border tracking-wide",
+        "inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold border whitespace-nowrap",
         styles.badge,
         className
       )}
@@ -60,7 +62,8 @@ export function Badge({ children, variant = "default", className }: BadgeProps) 
 }
 
 export function StatusBadge({ status }: { status: string }) {
+  const t = useT();
   const variant = (status as BadgeVariant) in variantStyles ? (status as BadgeVariant) : "default";
   const label = status.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
-  return <Badge variant={variant}>{label}</Badge>;
+  return <Badge variant={variant}>{t(label)}</Badge>;
 }

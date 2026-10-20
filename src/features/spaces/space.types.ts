@@ -1,0 +1,12 @@
+export type SpaceRole = 'reader' | 'contributor' | 'admin';
+export type Space = { id: string; name: string; kind: 'personal' | 'company'; owner_id: string | null; color: string; logo_url: string | null; created_at: string };
+export type SpaceMembership = { space_id: string; user_id: string; role: SpaceRole; created_at: string };
+export type AccessibleSpace = Space & { role: SpaceRole };
+export type SpaceContext = { active: AccessibleSpace; spaces: AccessibleSpace[]; platformAdmin: boolean };
+export type CopyKind = 'client' | 'story' | 'development';
+export type CopyPreview = { clients: number; stories: number; developments: number; attachments: number; previously_copied: number; selected_records?: number; reused_clients?: number; reused_stories?: number; reused_developments?: number };
+export type CopyFile = { source_path: string; target_path: string; copied: boolean };
+export type CopyResult = { root_id: string; created_clients: number; created_stories: number; created_developments: number };
+export type SpaceMember = { user_id: string; email: string; full_name: string | null; role: SpaceRole };
+export const canWrite = (role: SpaceRole) => role === 'admin' || role === 'contributor';
+export const canDelete = (role: SpaceRole) => role === 'admin';

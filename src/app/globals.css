@@ -8,7 +8,7 @@
   body {
     @apply text-sn-text bg-sn-bg;
     font-family: "Source Sans 3", "Source Sans Pro", Inter, ui-sans-serif, system-ui, sans-serif;
-    font-size: 13px;
+    font-size: 14px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -53,5 +53,49 @@
     to {
       transform: rotate(360deg);
     }
+  }
+}
+
+@layer components {
+  .workspace-header-icon { @apply items-center justify-center w-8 h-8 rounded-lg text-white/65 hover:text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#a3db7b]; }
+  .workspace-menu-item { @apply flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer outline-none data-[highlighted]:bg-sn-accent-light; }
+  .workspace-card { @apply rounded-xl border border-sn-border bg-white shadow-[0_2px_6px_rgba(16,44,62,0.025)]; }
+  .workspace-page-title { @apply text-2xl font-semibold tracking-tight text-sn-text; }
+  .workspace-list-page, .workspace-record { height: calc(100dvh - 6rem); }
+  .workspace-sidebar { width: var(--sidebar-width); }
+  .workspace-navigation-overlay { left: 0; }
+  @media (min-width: 1024px) {
+    .workspace-main { margin-left: var(--sidebar-width); }
+    .workspace-navigation-overlay { left: var(--sidebar-width); }
+    .workspace-list-page, .workspace-record { height: calc(100dvh - 7rem); }
+  }
+  @media (min-width: 1280px) {
+    .workspace-list-page, .workspace-record { height: calc(100dvh - 8rem); }
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+
+/* Shared list treatment: selection and focus take precedence over alternating rows. */
+@layer components {
+  .sn-list-row { background-color: #fff; }
+  .sn-list-row:nth-child(even) { background-color: #f0f5f5; }
+  .sn-list-row:hover, .sn-list-row:focus-within { background-color: #e6efed; }
+  .sn-list-row[data-selected="true"] { background-color: #dcece7; }
+  .sn-list-row[data-selected="true"]:hover,
+  .sn-list-row[data-selected="true"]:focus-within { background-color: #cfe4dc; }
+  .sn-list-row:focus-visible { outline: 2px solid #176b70; outline-offset: -2px; }
+
+  .sn-login-page {
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem 1.25rem;
+    background: radial-gradient(ellipse at 0% 100%, #4a9b7e 0%, transparent 65%),
+      radial-gradient(ellipse at 100% 100%, #39858d 0%, transparent 65%),
+      linear-gradient(145deg, #245568 0%, #286678 55%, #347f83 100%);
   }
 }

@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -66,6 +67,7 @@ interface Props {
 }
 
 export function StoryListClient({ stories }: Props) {
+  const t = useT();
   const router = useRouter();
 
   const columns = buildColumns((clientId) => router.push(`/clients/${clientId}`));
@@ -79,28 +81,29 @@ export function StoryListClient({ stories }: Props) {
   }, [stories]);
   const storyFilterFields = useMemo<FilterField[]>(() => [
     ...filterFields.slice(0, 2),
-    { key: "client", label: "Client", type: "select", options: clientOptions, getValue: (row) => (row as StoryWithClient).clients?.name ?? "" },
+    { key: "client", label: t("Client"), type: "select", options: clientOptions, getValue: (row) => (row as StoryWithClient).clients?.name ?? "" },
     ...filterFields.slice(2),
-  ], [clientOptions]);
+  ], [clientOptions, t]);
 
   async function handleDeleteSelected(ids: string[]) {
     await deleteStories(ids);
-    toast.success(`${ids.length} stor${ids.length > 1 ? "ies" : "y"} supprimée${ids.length > 1 ? "s" : ""}.`);
+    toast.success(t("{count} stories deleted.", { count: ids.length }));
     router.refresh();
   }
 
   return (
-    <div className="h-[calc(100vh-5rem)] min-h-0 flex flex-col">
+    <div className="workspace-list-page min-h-0 flex flex-col">
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
-          <h1 className="text-lg font-semibold text-sn-text">Stories</h1>
-          <p className="text-xs text-sn-text-muted mt-0.5">All stories across all clients</p>
+          <h1 className="workspace-page-title">{t("Stories")}</h1>
+          <p className="text-xs text-sn-text-muted mt-0.5">{t("All stories across all clients")}</p>
         </div>
       </div>
 
       <ServiceNowList
+        copyKind="story"
         className="flex-1"
-        title="Stories"
+        title={t("Stories")}
         data={stories}
         columns={columns}
         filterFields={storyFilterFields}
@@ -111,7 +114,7 @@ export function StoryListClient({ stories }: Props) {
         onNew={() => router.push("/stories/new")}
         onRefresh={() => router.refresh()}
         onDeleteSelected={handleDeleteSelected}
-        emptyMessage="No stories yet. Create a client first, then add stories."
+        emptyMessage={t("No stories yet. Create a client first, then add stories.")}
       />
     </div>
   );

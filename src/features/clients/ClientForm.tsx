@@ -1,4 +1,6 @@
 "use client";
+import { CopyToSpace } from "@/features/spaces/CopyToSpace";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -53,6 +55,7 @@ interface Props {
 }
 
 export function ClientFormClient({ client, stories = [] }: Props) {
+  const t = useT();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -80,15 +83,15 @@ export function ClientFormClient({ client, stories = [] }: Props) {
     try {
       if (isNew) {
         const created = await createClient(values);
-        toast.success("Client créé !");
+        toast.success(t("Client créé !"));
         router.push(`/clients/${created.id}`);
       } else {
         await updateClient(client.id, values);
-        toast.success("Client sauvegardé !");
+        toast.success(t("Client sauvegardé !"));
         router.refresh();
       }
     } catch (err) {
-      toast.error("Erreur : " + String(err));
+      toast.error(t("Erreur : ") + String(err));
     } finally {
       setSaving(false);
     }
@@ -98,10 +101,10 @@ export function ClientFormClient({ client, stories = [] }: Props) {
     setDeleting(true);
     try {
       await deleteClient(client!.id);
-      toast.success("Client supprimé.");
+      toast.success(t("Client supprimé."));
       router.push("/clients");
     } catch (err) {
-      toast.error("Erreur : " + String(err));
+      toast.error(t("Erreur : ") + String(err));
     } finally {
       setDeleting(false);
       setConfirmDelete(false);
@@ -111,11 +114,12 @@ export function ClientFormClient({ client, stories = [] }: Props) {
   return (
     <>
       <RecordForm
+        headerActions={!isNew && <CopyToSpace kind="client" id={client.id} />}
         wide
-        title={isNew ? "New Client" : client.name}
+        title={isNew ? t("New Client") : client.name}
         subtitle={!isNew ? client.code ?? undefined : undefined}
         status={!isNew ? client.status : undefined}
-        breadcrumbs={[{ label: "Clients", href: "/clients" }, { label: isNew ? "New" : client.name }]}
+        breadcrumbs={[{ label: t("Clients"), href: "/clients" }, { label: isNew ? t("New") : client.name }]}
         onSave={handleSubmit(onSubmit)}
         onDelete={!isNew ? () => setConfirmDelete(true) : undefined}
         saving={saving}
@@ -127,60 +131,61 @@ export function ClientFormClient({ client, stories = [] }: Props) {
         relatedLists={
           !isNew ? (
             <RelatedList
-              title="Stories"
+        copyKind="story"
+              title={t("Stories")}
               data={stories}
               columns={storyColumns}
               onRowClick={(row) => router.push(`/clients/${client.id}/stories/${row.id}`)}
               onNew={() => router.push(`/clients/${client.id}/stories/new`)}
               onRefresh={() => router.refresh()}
-              emptyMessage="No stories yet."
+              emptyMessage={t("No stories yet.")}
               onDeleteSelected={async (ids) => {
                 await deleteStories(ids, client.id);
-                toast.success(`${ids.length} stor${ids.length > 1 ? "ies" : "y"} supprimée${ids.length > 1 ? "s" : ""}.`);
+                toast.success(t("{count} stories deleted.", { count: ids.length }));
                 router.refresh();
               }}
             />
           ) : undefined
         }
       >
-        <FormSection title="General Information">
+        <FormSection title={t("General Information")}>
           <Input
-            label="Name *"
-            placeholder="Orange Business"
+            label={t("Name *")}
+            placeholder={t("Orange Business")}
             error={errors.name?.message}
             {...register("name")}
           />
           <Input
-            label="Code"
-            placeholder="OBS"
+            label={t("Code")}
+            placeholder={t("OBS")}
             {...register("code")}
           />
         </FormSection>
 
-        <FormSection title="Instance Details">
+        <FormSection title={t("Instance Details")}>
           <Input
-            label="Instance URL"
+            label={t("Instance URL")}
             type="url"
-            placeholder="https://instance.service-now.com"
+            placeholder={t("https://instance.service-now.com")}
             error={errors.instance_url?.message}
             {...register("instance_url")}
           />
           <Select
-            label="Environment"
-            options={ENV_OPTIONS}
+            label={t("Environment")}
+            options={ENV_OPTIONS.map(option => ({ ...option, label: t(option.label) }))}
             {...register("environment")}
           />
           <Select
-            label="Status"
-            options={STATUS_OPTIONS}
+            label={t("Status")}
+            options={STATUS_OPTIONS.map(option => ({ ...option, label: t(option.label) }))}
             {...register("status")}
           />
         </FormSection>
 
-        <FormSection title="Description" columns={1}>
+        <FormSection title={t("Description")} columns={1}>
           <Textarea
-            label="Description"
-            placeholder="Client description..."
+            label={t("Description")}
+            placeholder={t("Client description...")}
             className="min-h-[100px]"
             {...register("description")}
           />
@@ -192,8 +197,8 @@ export function ClientFormClient({ client, stories = [] }: Props) {
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDelete}
         loading={deleting}
-        title="Delete client"
-        message={`Delete "${client?.name}"? This will also delete all associated stories and developments.`}
+        title={t("Delete client")}
+        message={t('Delete "{name}"? All associated stories and developments will also be deleted.', { name: client?.name ?? "" })}
       />
     </>
   );

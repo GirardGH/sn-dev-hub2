@@ -1,3 +1,5 @@
+"use client";
+import { useT } from "@/i18n/LanguageProvider";
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
 
@@ -7,6 +9,7 @@ interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
 
 export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
   ({ className, label, id, ...props }, ref) => {
+    const t = useT();
     const inputId = id || label?.toLowerCase().replace(/\s+/g, "-");
 
     return (
@@ -26,7 +29,7 @@ export const Checkbox = forwardRef<HTMLInputElement, CheckboxProps>(
         />
         {label && (
           <span className="text-[13px] text-sn-text group-hover:text-sn-accent transition-colors">
-            {label}
+            {t(label)}
           </span>
         )}
       </label>

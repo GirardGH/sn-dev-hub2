@@ -1,10 +1,10 @@
 "use server";
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createSpaceSupabaseClient } from "@/lib/supabaseSpace";
 import { ATTACHMENT_BUCKET, validateAttachment } from "./attachment.types";
 import { z } from "zod";
 const idSchema = z.string().uuid();
 async function session() {
-  const db = await createServerSupabaseClient();
+  const db = await createSpaceSupabaseClient();
   const { data: { user }, error } = await db.auth.getUser();
   if (error || !user) throw new Error("Connectez-vous pour gérer les pièces jointes.");
   return { db, user };

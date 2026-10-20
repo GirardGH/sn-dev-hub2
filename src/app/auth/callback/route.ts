@@ -1,36 +1,23 @@
-import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from 'next/server';
+import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { safeAuthDestination } from '@/features/auth/authNavigation';
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
-  const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/dashboard";
-
-  if (code) {
-    const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet) {
-            for (const { name, value, options } of cookiesToSet) {
-              cookieStore.set(name, value, options);
-            }
-          },
-        },
-      }
-    );
-
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
-    }
+  const code=searchParams.get('code');
+  const next=safeAuthDestination(searchParams.get('next'));
+  function redirect(path: string) {
+    const response=NextResponse.redirect(new URL(path,origin));
+    response.headers.set('Cache-Control','no-store');
+    return response;
   }
-
-  return NextResponse.redirect(`${origin}/login?error=auth_error`);
+  if(searchParams.has('error'))return redirect(searchParams.get('error')==='access_denied'?'/login?error=access_denied':'/login?error=auth_error');
+  if(code){
+    try {
+      const supabase=await createServerSupabaseClient();
+      const {error}=await supabase.auth.exchangeCodeForSession(code);
+      if(!error)return redirect(next);
+    } catch { /* Return a generic error without exposing auth codes or tokens. */ }
+  }
+  return redirect('/login?error=auth_error');
 }

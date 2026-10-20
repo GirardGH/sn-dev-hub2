@@ -1,9 +1,9 @@
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createSpaceSupabaseClient } from "@/lib/supabaseSpace";
 import { DashboardClient } from "./DashboardClient";
 import type { RecentDev, RecentImport } from "./DashboardClient";
 
 export default async function DashboardPage() {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
 
   const [
     { count: clientsCount },

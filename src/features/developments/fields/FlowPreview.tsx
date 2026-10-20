@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
@@ -109,6 +110,7 @@ const FlowCanvas = dynamic(
 // ── Debug panel ───────────────────────────────────────────────────────────────
 
 function FlowDebugPanel({ debug }: { debug: FlowDebugInfo }) {
+  const t = useT();
   const [open, setOpen] = useState(false);
 
   return (
@@ -117,7 +119,7 @@ function FlowDebugPanel({ debug }: { debug: FlowDebugInfo }) {
         className="w-full flex items-center justify-between px-4 py-2.5 font-semibold text-slate-600 bg-slate-50 hover:bg-slate-100 transition-colors text-left"
         onClick={() => setOpen((v) => !v)}
       >
-        <span>Debug: extracted flow data — {debug.tables_found.length} tables found</span>
+        <span>{t("Debug: extracted flow data —")}{debug.tables_found.length} {t("tables found")}</span>
         <span className="text-slate-400 ml-2">{open ? "▲" : "▼"}</span>
       </button>
 
@@ -152,8 +154,7 @@ function FlowDebugPanel({ debug }: { debug: FlowDebugInfo }) {
           {/* Tables found */}
           <div>
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
-              Tables found in XML
-            </p>
+              {t("Tables found in XML")}</p>
             <div className="flex flex-wrap gap-1.5">
               {debug.tables_found.map((t) => (
                 <span
@@ -173,16 +174,14 @@ function FlowDebugPanel({ debug }: { debug: FlowDebugInfo }) {
           {Object.keys(debug.fields_per_table).length > 0 && (
             <div>
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                Available fields (first record)
-              </p>
+                {t("Available fields (first record)")}</p>
               <div className="space-y-2">
                 {Object.entries(debug.fields_per_table).map(([table, fields]) => (
                   <div key={table} className="bg-slate-50 rounded-md p-2.5 border border-slate-100">
                     <p className="font-semibold font-mono text-indigo-600 mb-1">
                       {table}{" "}
                       <span className="font-normal text-slate-400">
-                        — {debug.record_counts[table]} record
-                        {debug.record_counts[table] !== 1 ? "s" : ""}
+                        — {debug.record_counts[table]} {t("record")}{debug.record_counts[table] !== 1 ? "s" : ""}
                       </span>
                     </p>
                     <p className="font-mono text-[10px] text-slate-500 leading-relaxed break-all">
@@ -223,6 +222,7 @@ interface Props {
 }
 
 export function FlowPreview({ data }: Props) {
+  const t = useT();
   const { label: statusLabel, classes: statusClasses } = getStatusBadge(data.status);
   const hasStages = (data.stages ?? []).length > 0;
   const hasInputs = (data.inputs ?? []).length > 0;
@@ -235,7 +235,7 @@ export function FlowPreview({ data }: Props) {
   return (
     <>
       {/* ── Summary ─────────────────────────────────────────────────────────── */}
-      <FormSection title="Flow Designer Preview" columns={1}>
+      <FormSection title={t("Flow Designer Preview")} columns={1}>
         <div className="flex items-start gap-3 flex-wrap">
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-slate-800 truncate">
@@ -260,7 +260,7 @@ export function FlowPreview({ data }: Props) {
             )}
             {data.run_as && (
               <span className="text-xs text-slate-500">
-                Run as:{" "}
+                {t("Run as:")}{" "}
                 <span className="font-semibold text-slate-700">{data.run_as}</span>
               </span>
             )}
@@ -270,7 +270,7 @@ export function FlowPreview({ data }: Props) {
 
       {/* ── Stages strip ────────────────────────────────────────────────────── */}
       {hasStages && (
-        <FormSection title="Stages" columns={1}>
+        <FormSection title={t("Stages")} columns={1}>
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 flex-wrap">
             {uniqueStages.map((stage, i) => (
               <div key={i} className="flex items-center gap-1.5 shrink-0">
@@ -285,18 +285,18 @@ export function FlowPreview({ data }: Props) {
       )}
 
       {/* ── React Flow canvas ────────────────────────────────────────────────── */}
-      <FormSection title="Flow" columns={1}>
+      <FormSection title={t("Flow")} columns={1}>
         <FlowCanvas data={data} />
       </FormSection>
 
       {/* ── Inputs table ─────────────────────────────────────────────────────── */}
       {hasInputs && (
-        <FormSection title="Flow Inputs" columns={1}>
+        <FormSection title={t("Flow Inputs")} columns={1}>
           <div className="overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50">
-                  {["Label", "Element", "Type", "Mand.", "Reference", "Default"].map((h) => (
+                  {[t("Label"), "Element", t("Type"), "Mand.", "Reference", t("Default")].map((h) => (
                     <th
                       key={h}
                       className="text-left px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500 whitespace-nowrap"
@@ -336,7 +336,7 @@ export function FlowPreview({ data }: Props) {
 
       {/* ── Debug panel ──────────────────────────────────────────────────────── */}
       {data.debug && (
-        <FormSection title="XML Inspector" columns={1}>
+        <FormSection title={t("XML Inspector")} columns={1}>
           <FlowDebugPanel debug={data.debug} />
         </FormSection>
       )}

@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { Modal } from "./Modal";
 import { Button } from "./Button";
@@ -22,6 +23,7 @@ export function ConfirmDialog({
   confirmLabel = "Supprimer",
   loading,
 }: ConfirmDialogProps) {
+  const t = useT();
   return (
     <Modal
       open={open}
@@ -31,15 +33,14 @@ export function ConfirmDialog({
       footer={
         <>
           <Button variant="secondary" onClick={onClose} disabled={loading}>
-            Annuler
-          </Button>
+            {t("Annuler")}</Button>
           <Button variant="danger" onClick={onConfirm} loading={loading}>
-            {confirmLabel}
+            {t(confirmLabel)}
           </Button>
         </>
       }
     >
-      <p className="text-sm text-sn-text">{message}</p>
+      <p className="text-sm text-sn-text">{t(message)}</p>
     </Modal>
   );
 }

@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -20,35 +21,36 @@ interface BusinessRuleFieldsProps {
 }
 
 export function BusinessRuleFields({ config, onChange, readOnly }: BusinessRuleFieldsProps) {
+  const t = useT();
   function update(key: string, value: unknown) {
     onChange({ ...config, [key]: value });
   }
 
   return (
     <>
-      <FormSection title="Business Rule Configuration">
+      <FormSection title={t("Business Rule Configuration")}>
         <Input
-          label="Name"
+          label={t("Name")}
           value={(config.name as string) ?? ""}
           onChange={(e) => update("name", e.target.value)}
           disabled={readOnly}
         />
         <Input
-          label="Table"
+          label={t("Table")}
           value={(config.table as string) ?? ""}
           onChange={(e) => update("table", e.target.value)}
-          placeholder="incident"
+          placeholder={t("incident")}
           disabled={readOnly}
         />
         <Select
-          label="When"
-          options={WHEN_OPTIONS}
+          label={t("When")}
+          options={WHEN_OPTIONS.map(option => ({ ...option, label: t(option.label) }))}
           value={(config.when as string) ?? "before"}
           onChange={(e) => update("when", e.target.value)}
           disabled={readOnly}
         />
         <Input
-          label="Order"
+          label={t("Order")}
           type="number"
           value={(config.order as number) ?? 100}
           onChange={(e) => update("order", parseInt(e.target.value))}
@@ -56,19 +58,19 @@ export function BusinessRuleFields({ config, onChange, readOnly }: BusinessRuleF
         />
       </FormSection>
 
-      <FormSection title="Triggers" columns={1}>
+      <FormSection title={t("Triggers")} columns={1}>
         <div className="flex flex-wrap gap-4">
-          <Checkbox label="Insert" checked={(config.insert as boolean) ?? false} onChange={(e) => update("insert", e.target.checked)} disabled={readOnly} />
-          <Checkbox label="Update" checked={(config.update as boolean) ?? false} onChange={(e) => update("update", e.target.checked)} disabled={readOnly} />
-          <Checkbox label="Delete" checked={(config.delete as boolean) ?? false} onChange={(e) => update("delete", e.target.checked)} disabled={readOnly} />
-          <Checkbox label="Query" checked={(config.query as boolean) ?? false} onChange={(e) => update("query", e.target.checked)} disabled={readOnly} />
-          <Checkbox label="Active" checked={(config.active as boolean) ?? true} onChange={(e) => update("active", e.target.checked)} disabled={readOnly} />
+          <Checkbox label={t("Insert")} checked={(config.insert as boolean) ?? false} onChange={(e) => update("insert", e.target.checked)} disabled={readOnly} />
+          <Checkbox label={t("Update")} checked={(config.update as boolean) ?? false} onChange={(e) => update("update", e.target.checked)} disabled={readOnly} />
+          <Checkbox label={t("Delete")} checked={(config.delete as boolean) ?? false} onChange={(e) => update("delete", e.target.checked)} disabled={readOnly} />
+          <Checkbox label={t("Query")} checked={(config.query as boolean) ?? false} onChange={(e) => update("query", e.target.checked)} disabled={readOnly} />
+          <Checkbox label={t("Active")} checked={(config.active as boolean) ?? true} onChange={(e) => update("active", e.target.checked)} disabled={readOnly} />
         </div>
       </FormSection>
 
-      <FormSection title="Script" columns={1}>
+      <FormSection title={t("Script")} columns={1}>
         <CodeEditor
-          label="Condition"
+          label={t("Condition")}
           value={(config.condition as string) ?? ""}
           onChange={(v) => update("condition", v)}
           language="javascript"
@@ -76,7 +78,7 @@ export function BusinessRuleFields({ config, onChange, readOnly }: BusinessRuleF
           readOnly={readOnly}
         />
         <CodeEditor
-          label="Script"
+          label={t("Script")}
           value={(config.script as string) ?? ""}
           onChange={(v) => update("script", v)}
           language="javascript"

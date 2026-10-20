@@ -1,11 +1,11 @@
 "use server";
 
-import { createServerSupabaseClient } from "@/lib/supabaseServer";
+import { createSpaceSupabaseClient } from "@/lib/supabaseSpace";
 import { revalidatePath } from "next/cache";
 import type { ClientFormValues, Client } from "./client.types";
 
 export async function getClients(): Promise<Client[]> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("clients")
     .select("*")
@@ -15,7 +15,7 @@ export async function getClients(): Promise<Client[]> {
 }
 
 export async function getClient(id: string): Promise<Client> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("clients")
     .select("*")
@@ -26,7 +26,7 @@ export async function getClient(id: string): Promise<Client> {
 }
 
 export async function createClient(values: ClientFormValues): Promise<Client> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
@@ -49,7 +49,7 @@ export async function createClient(values: ClientFormValues): Promise<Client> {
 }
 
 export async function updateClient(id: string, values: ClientFormValues): Promise<Client> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("clients")
     .update({
@@ -70,7 +70,7 @@ export async function updateClient(id: string, values: ClientFormValues): Promis
 }
 
 export async function deleteClient(id: string): Promise<void> {
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { error } = await supabase.from("clients").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/clients");
@@ -78,7 +78,7 @@ export async function deleteClient(id: string): Promise<void> {
 
 export async function deleteClients(ids: string[]): Promise<void> {
   if (ids.length === 0) return;
-  const supabase = await createServerSupabaseClient();
+  const supabase = await createSpaceSupabaseClient();
   const { error } = await supabase.from("clients").delete().in("id", ids);
   if (error) throw new Error(error.message);
   revalidatePath("/clients");

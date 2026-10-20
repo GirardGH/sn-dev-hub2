@@ -1,4 +1,8 @@
 "use client";
+import { useSpace } from "@/features/spaces/SpaceProvider";
+import { CopyToSpace } from "@/features/spaces/CopyToSpace";
+import { canWrite, canDelete, type CopyKind } from "@/features/spaces/space.types";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useState, useMemo, useCallback } from "react";
 import {
@@ -44,6 +48,7 @@ interface ServiceNowListProps<T extends { id: string }> {
   extraActions?: React.ReactNode;
   emptyMessage?: string;
   onDeleteSelected?: (ids: string[]) => Promise<void>;
+  copyKind?: CopyKind;
   className?: string;
 }
 
@@ -61,8 +66,13 @@ export function ServiceNowList<T extends { id: string }>({
   extraActions,
   emptyMessage = "No records found.",
   onDeleteSelected,
+  copyKind,
   className,
 }: ServiceNowListProps<T>) {
+  const t = useT();
+  const space = useSpace();
+  const writable = space ? canWrite(space.active.role) : true;
+  const removable = space ? canDelete(space.active.role) : true;
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<string>("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -142,15 +152,19 @@ export function ServiceNowList<T extends { id: string }>({
     return result;
   }, [data, search, activeFilters, sortKey, sortDir, applyFilter, visibleColumns, filterFields, getColumnValue, getFilterValue]);
 
+  const copyable = !!copyKind && !!space?.spaces.some(target => target.id !== space.active.id && canWrite(target.role));
+  const selectable = copyable || (removable && !!onDeleteSelected);
+  const selectedIds = filteredData.filter(row => selected.has(row.id)).map(row => row.id);
+
   async function handleBulkDelete() {
     if (!onDeleteSelected) return;
     setDeleting(true);
     try {
-      await onDeleteSelected(Array.from(selected));
+      await onDeleteSelected(selectedIds);
       setSelected(new Set());
       onRefresh?.();
     } catch (err) {
-      toast.error("Erreur lors de la suppression : " + String(err));
+      toast.error(t("Erreur lors de la suppression : ") + String(err));
     } finally {
       setDeleting(false);
       setConfirmBulkDelete(false);
@@ -163,7 +177,7 @@ export function ServiceNowList<T extends { id: string }>({
   }
 
   function toggleSelectAll() {
-    if (selected.size === filteredData.length) setSelected(new Set());
+    if (selectedIds.length === filteredData.length) setSelected(new Set());
     else setSelected(new Set(filteredData.map((r) => r.id)));
   }
 
@@ -188,18 +202,18 @@ export function ServiceNowList<T extends { id: string }>({
   }
 
   return (
-    <div className={cn("bg-white border border-sn-border rounded-sm shadow-sm overflow-hidden flex flex-col min-h-0", className)}>
+    <div className={cn("workspace-card overflow-hidden flex flex-col min-h-0", className)}>
       {/* Header bar */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-sn-border bg-sn-table-header flex-shrink-0">
+      <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-3 border-b border-sn-border bg-white flex-shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-semibold text-sn-text">{title}</span>
-          <span className="text-[11px] text-sn-text-muted bg-white border border-sn-border rounded-sm px-1.5 py-0.5 font-medium">
+          <span className="text-[11px] text-sn-text-muted bg-white border border-sn-border rounded-md px-1.5 py-0.5 font-medium">
             {filteredData.length}
             {filteredData.length !== data.length && ` / ${data.length}`}
           </span>
         </div>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center flex-wrap gap-2">
           {/* Search */}
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-sn-text-muted" />
@@ -207,8 +221,9 @@ export function ServiceNowList<T extends { id: string }>({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search..."
-              className="h-7 pl-7 pr-2.5 text-xs bg-white border border-sn-border rounded-sm outline-none focus:border-sn-accent focus:ring-1 focus:ring-sn-accent/30 w-44 placeholder:text-sn-border-dark"
+              aria-label={t("Rechercher dans la liste")}
+              placeholder={t("Rechercher dans la liste…")}
+              className="h-8 pl-7 pr-2.5 text-xs bg-white border border-sn-border rounded-md outline-none focus:border-sn-accent focus:ring-1 focus:ring-sn-accent/30 w-48 sm:w-56 placeholder:text-sn-border-dark"
             />
           </div>
 
@@ -234,11 +249,12 @@ export function ServiceNowList<T extends { id: string }>({
             size="sm"
             icon={<Download className="w-3.5 h-3.5" />}
             onClick={exportCsv}
-            title="Export CSV"
+            title={t("Exporter en CSV")}
+            aria-label={t("Exporter en CSV")}
           />
 
           {/* Refresh / Bulk delete — delete replaces refresh when rows are selected */}
-          {onDeleteSelected && selected.size > 0 ? (
+          {removable && onDeleteSelected && selectedIds.length > 0 ? (
             <Button
               size="sm"
               icon={<Trash2 className="w-3.5 h-3.5" />}
@@ -246,7 +262,7 @@ export function ServiceNowList<T extends { id: string }>({
               loading={deleting}
               className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 shadow-sm"
             >
-              Supprimer ({selected.size})
+              {t("Supprimer (")}{selectedIds.length})
             </Button>
           ) : onRefresh ? (
             <Button
@@ -255,15 +271,17 @@ export function ServiceNowList<T extends { id: string }>({
               icon={<RefreshCw className="w-3.5 h-3.5" />}
               onClick={onRefresh}
               loading={loading}
-              title="Refresh"
+              title={t("Actualiser")}
+              aria-label={t("Actualiser")}
             />
           ) : null}
 
           {/* Extra */}
           {extraActions}
+          {copyable && copyKind && selectedIds.length > 0 && <CopyToSpace kind={copyKind} ids={selectedIds} />}
 
           {/* New */}
-          {onNew && (
+          {writable && onNew && (
             <Button
               size="sm"
               icon={<Plus className="w-3.5 h-3.5" />}
@@ -278,26 +296,30 @@ export function ServiceNowList<T extends { id: string }>({
 
       {/* Table */}
       <div className="min-h-0 flex-1 overflow-auto">
-        <table className="w-full text-[13px]">
+        <table className="w-full min-w-[640px] text-[13px]">
           <thead className="sticky top-0 z-10">
-            <tr className="border-b-2 border-sn-border bg-sn-table-header">
-              <th className="w-8 px-3 py-2">
+            <tr className="border-b border-sn-border bg-sn-table-header">
+              {selectable && <th className="w-8 px-4 py-3">
                 <Checkbox
-                  checked={selected.size === filteredData.length && filteredData.length > 0}
+                  aria-label={t("Select all visible records")}
+                      checked={selectedIds.length === filteredData.length && filteredData.length > 0}
                   onChange={toggleSelectAll}
                 />
-              </th>
+              </th>}
               {visibleColumns.map((col) => (
                 <th
                   key={col.key}
                   className={cn(
-                    "px-3 py-2 text-left text-[11px] font-semibold text-sn-text-muted uppercase tracking-wider",
+                    "px-4 py-3 text-left text-[11px] font-semibold text-sn-text-muted uppercase tracking-wider",
                     col.sortable !== false && "cursor-pointer hover:text-sn-text select-none"
                   )}
+                  tabIndex={col.sortable !== false ? 0 : undefined}
+                  aria-sort={sortKey === col.key ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
+                  onKeyDown={(event) => { if (col.sortable !== false && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); toggleSort(col.key); } }}
                   onClick={() => col.sortable !== false && toggleSort(col.key)}
                 >
                   <span className="flex items-center gap-1">
-                    {col.label}
+                    {t(col.label)}
                     {col.sortable !== false &&
                       (sortKey === col.key ? (
                         sortDir === "asc" ? (
@@ -316,7 +338,7 @@ export function ServiceNowList<T extends { id: string }>({
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={visibleColumns.length + 1} className="px-3 py-8 text-center">
+                <td colSpan={visibleColumns.length + (selectable ? 1 : 0)} className="px-3 py-8 text-center">
                   <Loader2 className="w-5 h-5 animate-spin text-sn-accent mx-auto" />
                 </td>
               </tr>
@@ -324,7 +346,7 @@ export function ServiceNowList<T extends { id: string }>({
             {!loading && filteredData.length === 0 && (
               <tr>
                 <td
-                  colSpan={visibleColumns.length + 1}
+                  colSpan={visibleColumns.length + (selectable ? 1 : 0)}
                   className="px-3 py-8 text-center text-[13px] text-sn-text-muted"
                 >
                   {emptyMessage}
@@ -332,26 +354,29 @@ export function ServiceNowList<T extends { id: string }>({
               </tr>
             )}
             {!loading &&
-              filteredData.map((row, idx) => (
+              filteredData.map((row) => (
                 <tr
                   key={row.id}
+                    data-selected={selected.has(row.id) ? "true" : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onKeyDown={(event) => { if (event.key === "Enter" && event.target === event.currentTarget) onRowClick?.(row); }}
                   onClick={() => onRowClick?.(row)}
                   data-navigation-feedback={onRowClick ? "true" : undefined}
                   className={cn(
-                    "border-b border-sn-border last:border-0 transition-colors group",
-                    idx % 2 === 1 ? "bg-sn-table-stripe" : "bg-white",
-                    onRowClick && "cursor-pointer hover:bg-sn-accent-light"
+                    "sn-list-row border-b border-sn-border last:border-0 transition-colors group",
+                    onRowClick && "cursor-pointer"
                   )}
                 >
-                  <td className="w-8 px-3 py-2" onClick={(e) => e.stopPropagation()} data-navigation-feedback="ignore">
+                  {selectable && <td className="w-8 px-4 py-3" onClick={(e) => e.stopPropagation()} data-navigation-feedback="ignore">
                     <div className={cn(
                       "transition-opacity",
-                      selected.has(row.id) || selected.size > 0
+                      selected.has(row.id) || selectedIds.length > 0
                         ? "opacity-100"
-                        : "opacity-0 group-hover:opacity-100"
+                        : "opacity-60 group-hover:opacity-100 group-focus-within:opacity-100"
                     )}>
                       <Checkbox
-                        checked={selected.has(row.id)}
+                        aria-label={t("Select record {id}", {id: row.id})}
+                            checked={selected.has(row.id)}
                         onChange={() => {
                           const next = new Set(selected);
                           if (next.has(row.id)) { next.delete(row.id); } else { next.add(row.id); }
@@ -359,9 +384,9 @@ export function ServiceNowList<T extends { id: string }>({
                         }}
                       />
                     </div>
-                  </td>
+                  </td>}
                   {visibleColumns.map((col) => (
-                    <td key={col.key} className="px-3 py-2 text-sn-text">
+                    <td key={col.key} className="px-4 py-3 text-sn-text">
                       {col.render
                         ? col.render(row)
                         : String(getColumnValue(row, col.key) ?? "—")}
@@ -378,8 +403,8 @@ export function ServiceNowList<T extends { id: string }>({
         onClose={() => setConfirmBulkDelete(false)}
         onConfirm={handleBulkDelete}
         loading={deleting}
-        title="Confirmer la suppression"
-        message={`Supprimer ${selected.size} enregistrement${selected.size > 1 ? "s" : ""} ? Cette action est irréversible.`}
+        title={t("Confirmer la suppression")}
+        message={t("Delete {count} records? This action cannot be undone.", { count: selectedIds.length })}
       />
     </div>
   );

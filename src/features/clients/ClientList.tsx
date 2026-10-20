@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useRouter } from "next/navigation";
 import { Building2 } from "lucide-react";
@@ -47,28 +48,29 @@ interface Props {
 }
 
 export function ClientListClient({ clients }: Props) {
+  const t = useT();
   const router = useRouter();
 
   async function handleDeleteSelected(ids: string[]) {
     await deleteClients(ids);
-    toast.success(`${ids.length} client${ids.length > 1 ? "s" : ""} supprimé${ids.length > 1 ? "s" : ""}.`);
+    toast.success(t("{count} clients deleted.", { count: ids.length }));
     router.refresh();
   }
 
   return (
-    <div className="h-[calc(100vh-5rem)] min-h-0 flex flex-col">
+    <div className="workspace-list-page min-h-0 flex flex-col">
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
-          <h1 className="text-lg font-semibold text-sn-text">Clients</h1>
+          <h1 className="workspace-page-title">{t("Clients")}</h1>
           <p className="text-xs text-sn-text-muted mt-0.5">
-            Manage your ServiceNow clients
-          </p>
+            {t("Manage your ServiceNow clients")}</p>
         </div>
       </div>
 
       <ServiceNowList
+        copyKind="client"
         className="flex-1"
-        title="Clients"
+        title={t("Clients")}
         data={clients}
         columns={defaultColumns}
         filterFields={filterFields}
@@ -76,7 +78,7 @@ export function ClientListClient({ clients }: Props) {
         onNew={() => router.push("/clients/new")}
         onRefresh={() => router.refresh()}
         onDeleteSelected={handleDeleteSelected}
-        emptyMessage="No clients yet. Click New to create your first client."
+        emptyMessage={t("No clients yet. Click New to create your first client.")}
       />
     </div>
   );

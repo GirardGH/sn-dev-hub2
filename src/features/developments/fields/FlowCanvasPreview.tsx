@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import ReactFlow, {
   Background,
@@ -111,6 +112,7 @@ const H_STEP = 360;
 type EdgeTone = "default" | "true" | "false" | "merge";
 
 function FlowStepNode({ data }: NodeProps<NodeData>) {
+  const t = useT();
   const cls = classifyAction(data.action, data.nodeType, data.branchType);
   const s = STYLES[cls];
   const Icon = s.icon;
@@ -205,7 +207,7 @@ function FlowStepNode({ data }: NodeProps<NodeData>) {
               fontSize: 8.5, fontWeight: 700, color: s.iconColor,
               textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 1.5, opacity: 0.8,
             }}>
-              {data.nodeType === "trigger" ? "Trigger" : "End"}
+              {data.nodeType === "trigger" ? "Trigger" : t("End")}
             </div>
           )}
           {(data.branchType === "if" || data.branchType === "else_if" || data.branchType === "else") && (
@@ -213,8 +215,7 @@ function FlowStepNode({ data }: NodeProps<NodeData>) {
               fontSize: 8.5, fontWeight: 700, color: s.iconColor,
               textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 1.5, opacity: 0.75,
             }}>
-              Condition
-            </div>
+              {t("Condition")}</div>
           )}
           <div
             style={{
@@ -732,6 +733,7 @@ function EmptyMsg({ msg }: { msg: string }) {
 
 // Type-specific summary for known action types
 function TypeSpecificSummary({ step }: { step: FlowPreviewStep }) {
+  const t = useT();
   const params = (step.params ?? []) as FlowPreviewStepParam[];
   const getP = (name: string) =>
     params.find((p) => p.name === name)?.display_value ||
@@ -741,29 +743,29 @@ function TypeSpecificSummary({ step }: { step: FlowPreviewStep }) {
   if (action.includes("catalog task") || action.includes("create catalog")) {
     return (
       <>
-        <DataRow label="Table" value={getP("table") || getP("sys_class_name")} />
-        <DataRow label="Short Description" value={getP("short_description")} />
-        <DataRow label="Assignment Group" value={getP("assignment_group")} />
-        <DataRow label="Description" value={getP("description")} />
-        <DataRow label="Template" value={getP("template_id") || getP("template")} />
+        <DataRow label={t("Table")} value={getP("table") || getP("sys_class_name")} />
+        <DataRow label={t("Short Description")} value={getP("short_description")} />
+        <DataRow label={t("Assignment Group")} value={getP("assignment_group")} />
+        <DataRow label={t("Description")} value={getP("description")} />
+        <DataRow label={t("Template")} value={getP("template_id") || getP("template")} />
       </>
     );
   }
   if (action.includes("look up") || action.includes("lookup") || action.includes("look_up")) {
     return (
       <>
-        <DataRow label="Table" value={getP("table") || getP("sys_class_name")} />
-        <DataRow label="Conditions" value={getP("conditions") || getP("field_conditions") || getP("query")} />
-        <DataRow label="Return First" value={getP("return_first")} />
+        <DataRow label={t("Table")} value={getP("table") || getP("sys_class_name")} />
+        <DataRow label={t("Conditions")} value={getP("conditions") || getP("field_conditions") || getP("query")} />
+        <DataRow label={t("Return First")} value={getP("return_first")} />
       </>
     );
   }
   if (action.includes("approval") || action.includes("ask for")) {
     return (
       <>
-        <DataRow label="Approvers" value={getP("approvers") || getP("approval_user")} />
-        <DataRow label="Approval Type" value={getP("approval_type")} />
-        <DataRow label="Journal Field" value={getP("journal_field")} />
+        <DataRow label={t("Approvers")} value={getP("approvers") || getP("approval_user")} />
+        <DataRow label={t("Approval Type")} value={getP("approval_type")} />
+        <DataRow label={t("Journal Field")} value={getP("journal_field")} />
       </>
     );
   }
@@ -779,6 +781,7 @@ const TABS = ["Summary", "Parameters", "Inputs", "Outputs", "Raw"] as const;
 type Tab = typeof TABS[number];
 
 function StepDetailPanel({ content, onClose }: { content: PanelContent; onClose: () => void }) {
+  const t = useT();
   const [tab, setTab] = useState<Tab>("Summary");
 
   const headerTitle =
@@ -813,7 +816,7 @@ function StepDetailPanel({ content, onClose }: { content: PanelContent; onClose:
             {headerTitle}
           </div>
         </div>
-        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 2, display: "flex", alignItems: "center", flexShrink: 0, borderRadius: 4 }} aria-label="Close">
+        <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8", padding: 2, display: "flex", alignItems: "center", flexShrink: 0, borderRadius: 4 }} aria-label={t("Close")}>
           <X size={14} />
         </button>
       </div>
@@ -855,10 +858,10 @@ function StepDetailPanel({ content, onClose }: { content: PanelContent; onClose:
         {/* Trigger */}
         {content.kind === "trigger" && (
           <>
-            <DataRow label="Trigger Type" value={content.trigger.definition || content.trigger.name} />
-            {content.trigger.table && <DataRow label="Table" value={content.trigger.table} mono />}
-            {content.trigger.catalog_item && <DataRow label="Catalog Item" value={String(content.trigger.catalog_item)} />}
-            {content.trigger.comment && <DataRow label="Comment" value={content.trigger.comment} />}
+            <DataRow label={t("Trigger Type")} value={content.trigger.definition || content.trigger.name} />
+            {content.trigger.table && <DataRow label={t("Table")} value={content.trigger.table} mono />}
+            {content.trigger.catalog_item && <DataRow label={t("Catalog Item")} value={String(content.trigger.catalog_item)} />}
+            {content.trigger.comment && <DataRow label={t("Comment")} value={content.trigger.comment} />}
           </>
         )}
 
@@ -867,24 +870,24 @@ function StepDetailPanel({ content, onClose }: { content: PanelContent; onClose:
         {/* Step — Summary */}
         {content.kind === "step" && tab === "Summary" && (
           <>
-            <DataRow label="Step #" value={String(content.step.order)} />
-            <DataRow label="Label" value={content.step.label} />
+            <DataRow label={t("Step #")} value={String(content.step.order)} />
+            <DataRow label={t("Label")} value={content.step.label} />
             {content.step.action && content.step.action !== content.step.label && (
-              <DataRow label="Action Type" value={content.step.action} />
+              <DataRow label={t("Action Type")} value={content.step.action} />
             )}
             {content.step.branch_type && (
-              <DataRow label="Branch Type" value={String(content.step.branch_type).toUpperCase()} />
+              <DataRow label={t("Branch Type")} value={String(content.step.branch_type).toUpperCase()} />
             )}
             {content.step.condition && (
-              <DataRow label="Condition" value={content.step.condition} />
+              <DataRow label={t("Condition")} value={content.step.condition} />
             )}
             {content.step.parent_ui_id && (
-              <DataRow label="Parent UI ID" value={content.step.parent_ui_id} mono />
+              <DataRow label={t("Parent UI ID")} value={content.step.parent_ui_id} mono />
             )}
             {content.step.connected_to && (
-              <DataRow label="Connected To" value={content.step.connected_to} mono />
+              <DataRow label={t("Connected To")} value={content.step.connected_to} mono />
             )}
-            <DataRow label="Instance UUID" value={content.step.uuid} mono />
+            <DataRow label={t("Instance UUID")} value={content.step.uuid} mono />
             <TypeSpecificSummary step={content.step} />
           </>
         )}
@@ -923,14 +926,14 @@ function StepDetailPanel({ content, onClose }: { content: PanelContent; onClose:
               {inputs.map((inp, i) => (
                 <div key={i} style={{ padding: "7px 9px", borderRadius: 7, border: "1px solid #e2e8f0", background: "#fafcff" }}>
                   <div style={{ fontSize: 9.5, fontWeight: 700, color: "#6366f1", textTransform: "uppercase" as const, letterSpacing: "0.08em", marginBottom: 2 }}>
-                    Step {inp.source_order} — {inp.source_label}
+                    {t("Step")}{inp.source_order} — {inp.source_label}
                   </div>
                   <div style={{ fontSize: 11.5, fontWeight: 600, color: "#1e293b", wordBreak: "break-word" as const }}>
                     {inp.field || "—"}
                   </div>
                   {inp.usages && inp.usages.length > 0 && (
                     <div style={{ fontSize: 9.5, color: "#64748b", marginTop: 2 }}>
-                      Used as: <strong>{inp.usages.join(", ")}</strong>
+                      {t("Used as:")}<strong>{inp.usages.join(", ")}</strong>
                     </div>
                   )}
                 </div>
@@ -965,7 +968,7 @@ function StepDetailPanel({ content, onClose }: { content: PanelContent; onClose:
                   {o.choices && o.choices.length > 0 && (
                     <div style={{ marginTop: 5 }}>
                       <div style={{ fontSize: 9, color: "#94a3b8", marginBottom: 2, fontWeight: 700, textTransform: "uppercase" as const, letterSpacing: "0.06em" }}>
-                        Choices ({o.choices.length})
+                        {t("Choices (")}{o.choices.length})
                       </div>
                       <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 3 }}>
                         {o.choices.map((c, ci) => (
@@ -1004,6 +1007,7 @@ interface Props {
 }
 
 export function FlowCanvasPreview({ data }: Props) {
+  const t = useT();
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node<NodeData>) => {
@@ -1045,7 +1049,7 @@ export function FlowCanvasPreview({ data }: Props) {
       });
     });
 
-    raw.push({ id: "end", label: "End", action: "End", nodeType: "end" });
+    raw.push({ id: "end", label: t("End"), action: "End", nodeType: "end" });
 
     const hasStructuralLinks = raw.some((node) => node.parentUiId || node.connectedTo);
     const treeLayout = hasStructuralLinks ? layoutFlowTree(buildFlowTree(raw)) : null;
@@ -1078,7 +1082,7 @@ export function FlowCanvasPreview({ data }: Props) {
       edges: builtEdges,
       canvasHeight: Math.min(600, Math.max(300, totalContent)),
     };
-  }, [data, selectedNodeId]);
+  }, [data, selectedNodeId, t]);
 
   const panelContent: PanelContent | null = useMemo(() => {
     if (!selectedNodeId) return null;
@@ -1101,8 +1105,8 @@ export function FlowCanvasPreview({ data }: Props) {
         {!hasSteps ? (
           <div style={{ height: "100%", display: "flex", flexDirection: "column" as const, alignItems: "center", justifyContent: "center", gap: 8, color: "#94a3b8" }}>
             <Workflow size={32} strokeWidth={1.5} />
-            <span style={{ fontSize: 13 }}>No flow steps detected in this XML</span>
-            <span style={{ fontSize: 11, opacity: 0.7 }}>Re-import the XML to extract steps from label_cache</span>
+            <span style={{ fontSize: 13 }}>{t("No flow steps detected in this XML")}</span>
+            <span style={{ fontSize: 11, opacity: 0.7 }}>{t("Re-import the XML to extract steps from label_cache")}</span>
           </div>
         ) : (
           <ReactFlow

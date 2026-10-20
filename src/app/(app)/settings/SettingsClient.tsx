@@ -1,4 +1,6 @@
 "use client";
+import { useLanguage } from "@/i18n/LanguageProvider";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -20,6 +22,8 @@ interface Props {
 }
 
 export function SettingsClient({ user, profile }: Props) {
+  const t = useT();
+  const { language, setLanguage } = useLanguage();
   const router = useRouter();
   const [fullName, setFullName] = useState(profile?.full_name ?? "");
   const [saving, setSaving] = useState(false);
@@ -35,13 +39,13 @@ export function SettingsClient({ user, profile }: Props) {
       .update({ full_name: fullName } as { full_name: string })
       .eq("id", user!.id);
     setSaving(false);
-    if (error) toast.error("Error: " + error.message);
-    else { toast.success("Profile saved!"); router.refresh(); }
+    if (error) toast.error(t("Error: ") + error.message);
+    else { toast.success(t("Profile saved!")); router.refresh(); }
   }
 
   async function changePassword() {
     if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters.");
+      toast.error(t("Password must be at least 6 characters."));
       return;
     }
     setChangingPassword(true);
@@ -49,67 +53,78 @@ export function SettingsClient({ user, profile }: Props) {
     const supabase = createClient();
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     setChangingPassword(false);
-    if (error) toast.error("Error: " + error.message);
-    else { toast.success("Password updated!"); setNewPassword(""); }
+    if (error) toast.error(t("Error: ") + error.message);
+    else { toast.success(t("Password updated!")); setNewPassword(""); }
   }
 
   return (
     <div className="max-w-2xl">
-      <Breadcrumbs items={[{ label: "Settings" }]} className="mb-3" />
+      <Breadcrumbs items={[{ label: t("Settings") }]} className="mb-3" />
 
       <div className="flex items-center gap-2 mb-6">
         <Settings className="w-5 h-5 text-sn-accent" />
-        <h1 className="text-lg font-semibold text-sn-text">Settings</h1>
+        <h1 className="text-lg font-semibold text-sn-text">{t("Settings")}</h1>
       </div>
 
       <div className="space-y-4">
+        <Card title={t("Language")}>
+          <fieldset>
+            <legend className="text-sm text-sn-text-muted mb-4">{t("Choose the language used throughout the application.")}</legend>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {([['fr', 'Français / French'], ['en', 'English / Anglais']] as const).map(([value, label]) => (
+                <label key={value} className={`flex items-center gap-3 rounded-lg border p-4 cursor-pointer ${language === value ? 'border-sn-accent bg-sn-accent-light' : 'border-sn-border hover:bg-sn-table-header'}`}>
+                  <input type="radio" name="language" value={value} checked={language === value} onChange={() => setLanguage(value)} className="accent-sn-accent" />
+                  <span className="font-medium">{label}</span>
+                </label>
+              ))}
+            </div>
+            <p className="text-xs text-sn-text-muted mt-3" role="status">{t("Language preference saved on this browser.")}</p>
+          </fieldset>
+        </Card>
         {/* Profile */}
         <Card
-          title="Profile"
+          title={t("Profile")}
           actions={
             <div className="flex items-center gap-1.5 text-xs text-sn-text-muted">
               <User className="w-3.5 h-3.5" />
-              Account
-            </div>
+              {t("Account")}</div>
           }
         >
           <div className="space-y-4">
             <Input
-              label="Email"
+              label={t("Email")}
               value={user?.email ?? ""}
               disabled
-              hint="Email cannot be changed"
+              hint={t("Email cannot be changed")}
             />
             <Input
-              label="Full Name"
+              label={t("Full Name")}
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
-              placeholder="John Doe"
+              placeholder={t("John Doe")}
             />
             <Button onClick={saveProfile} loading={saving}>
-              Save Profile
-            </Button>
+              {t("Save Profile")}</Button>
           </div>
         </Card>
 
         {/* Security */}
         <Card
-          title="Security"
+          title={t("Security")}
           actions={
             <div className="flex items-center gap-1.5 text-xs text-sn-text-muted">
               <Shield className="w-3.5 h-3.5" />
-              Password
-            </div>
+              {t("Password")}</div>
           }
         >
           <div className="space-y-4">
             <Input
-              label="New Password"
+              label={t("New Password")}
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="••••••••"
-              hint="Minimum 6 characters"
+              hint={t("Minimum 6 characters")}
             />
             <Button
               variant="secondary"
@@ -117,25 +132,24 @@ export function SettingsClient({ user, profile }: Props) {
               loading={changingPassword}
               disabled={!newPassword}
             >
-              Change Password
-            </Button>
+              {t("Change Password")}</Button>
           </div>
         </Card>
 
         {/* Account info */}
-        <Card title="Account Information">
+        <Card title={t("Account Information")}>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-sn-text-muted">User ID</span>
+              <span className="text-sn-text-muted">{t("User ID")}</span>
               <code className="text-xs bg-gray-100 px-2 py-0.5 rounded text-sn-text">
                 {user?.id?.slice(0, 20)}...
               </code>
             </div>
             <div className="flex justify-between">
-              <span className="text-sn-text-muted">Created</span>
+              <span className="text-sn-text-muted">{t("Created")}</span>
               <span className="text-sn-text">
                 {user?.created_at
-                  ? new Date(user.created_at).toLocaleDateString("fr-FR")
+                  ? new Date(user.created_at).toLocaleDateString(language === "fr" ? "fr-FR" : "en-GB")
                   : "—"}
               </span>
             </div>

@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { Input } from "@/components/ui/Input";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -12,41 +13,42 @@ interface Props {
 }
 
 export function WidgetFields({ config, onChange, readOnly }: Props) {
+  const t = useT();
   function update(key: string, value: unknown) {
     onChange({ ...config, [key]: value });
   }
 
   return (
     <>
-      <FormSection title="Widget Configuration">
+      <FormSection title={t("Widget Configuration")}>
         <Input
-          label="Name"
+          label={t("Name")}
           value={(config.name as string) ?? ""}
           onChange={(e) => update("name", e.target.value)}
           disabled={readOnly}
         />
         <Input
-          label="Widget ID"
+          label={t("Widget ID")}
           value={(config.id as string) ?? ""}
           onChange={(e) => update("id", e.target.value)}
-          placeholder="my-widget-id"
+          placeholder={t("my-widget-id")}
           disabled={readOnly}
         />
         <Input
-          label="Description"
+          label={t("Description")}
           value={(config.description as string) ?? ""}
           onChange={(e) => update("description", e.target.value)}
           disabled={readOnly}
         />
         <Checkbox
-          label="Active"
+          label={t("Active")}
           checked={(config.active as boolean) ?? true}
           onChange={(e) => update("active", e.target.checked)}
           disabled={readOnly}
         />
       </FormSection>
 
-      <FormSection title="HTML Template" columns={1}>
+      <FormSection title={t("HTML Template")} columns={1}>
         <CodeEditor
           value={(config.htmlTemplate as string) ?? ""}
           onChange={(v) => update("htmlTemplate", v)}
@@ -56,7 +58,7 @@ export function WidgetFields({ config, onChange, readOnly }: Props) {
         />
       </FormSection>
 
-      <FormSection title="CSS" columns={1}>
+      <FormSection title={t("CSS")} columns={1}>
         <CodeEditor
           value={(config.css as string) ?? ""}
           onChange={(v) => update("css", v)}
@@ -66,7 +68,7 @@ export function WidgetFields({ config, onChange, readOnly }: Props) {
         />
       </FormSection>
 
-      <FormSection title="Client Script" columns={1}>
+      <FormSection title={t("Client Script")} columns={1}>
         <CodeEditor
           value={(config.clientScript as string) ?? ""}
           onChange={(v) => update("clientScript", v)}
@@ -76,7 +78,7 @@ export function WidgetFields({ config, onChange, readOnly }: Props) {
         />
       </FormSection>
 
-      <FormSection title="Server Script" columns={1}>
+      <FormSection title={t("Server Script")} columns={1}>
         <CodeEditor
           value={(config.serverScript as string) ?? ""}
           onChange={(v) => update("serverScript", v)}

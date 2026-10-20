@@ -1,4 +1,6 @@
 "use client";
+import { CopyToSpace } from "@/features/spaces/CopyToSpace";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { DevelopmentAttachments } from "@/features/attachments/DevelopmentAttachments";
 import { useRef, useState } from "react";
@@ -59,6 +61,7 @@ interface Props {
 }
 
 export function DevelopmentFormClient({ development, client, story, clientId, storyId, allClients, allStories }: Props) {
+  const t = useT();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -132,7 +135,7 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
     const firstMsg = Object.values(errs).find(
       (e): e is { message: string } => typeof e === "object" && e !== null && "message" in e
     );
-    toast.error(firstMsg?.message ?? "Formulaire invalide — vérifiez les champs.");
+    toast.error(firstMsg?.message ? t(firstMsg.message) : t("Formulaire invalide — vérifiez les champs."));
   }
 
   async function onSubmit(values: DevelopmentFormValues) {
@@ -141,17 +144,17 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
       const payload = { ...values, config };
       if (isNew) {
         const created = await createDevelopment(payload);
-        toast.success("Development créé !");
+        toast.success(t("Development créé !"));
         router.push(
           `/clients/${resolvedClientId}/stories/${resolvedStoryId}/developments/${created.id}`
         );
       } else {
         await updateDevelopment(development.id, payload);
-        toast.success("Development sauvegardé !");
+        toast.success(t("Development sauvegardé !"));
         router.refresh();
       }
     } catch (err) {
-      toast.error("Erreur : " + String(err));
+      toast.error(t("Erreur : ") + String(err));
     } finally {
       setSaving(false);
     }
@@ -161,10 +164,10 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
     setDeleting(true);
     try {
       await deleteDevelopment(development!.id, resolvedStoryId, resolvedClientId);
-      toast.success("Development supprimé.");
+      toast.success(t("Development supprimé."));
       router.push(`/clients/${resolvedClientId}/stories/${resolvedStoryId}`);
     } catch (err) {
-      toast.error("Erreur : " + String(err));
+      toast.error(t("Erreur : ") + String(err));
     } finally {
       setDeleting(false);
       setConfirmDelete(false);
@@ -181,7 +184,7 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
     }
     switch (selectedType) {
       case "notification":
-        return <><NotificationConfigFields config={config} onChange={handleConfigChange} /><details className="mb-4 border border-sn-border"><summary className="p-3 cursor-pointer text-sm">Tous les champs du dictionnaire ServiceNow</summary><ServiceNowFields table="sysevent_email_action" config={config} onChange={handleConfigChange} /></details></>;
+        return <><NotificationConfigFields config={config} onChange={handleConfigChange} /><details className="mb-4 border border-sn-border"><summary className="p-3 cursor-pointer text-sm">{t("Tous les champs du dictionnaire ServiceNow")}</summary><ServiceNowFields table="sysevent_email_action" config={config} onChange={handleConfigChange} /></details></>;
       case "flow":
         return (
           <>
@@ -205,17 +208,17 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
     <DevelopmentAttachments developmentId={development?.id}>
       {({ header, strip, busy }) => <>
       <RecordForm
-        headerActions={header}
+        headerActions={<>{header}{!isNew && <CopyToSpace kind="development" id={development.id} />}</>}
         attachmentStrip={strip}
         wide
-        title={isNew ? `New ${typeLabel}` : development.title}
+        title={isNew ? `${t("New")} · ${t(typeLabel)}` : development.title}
         subtitle={`${storyTitle}${clientName ? ` · ${clientName}` : ""}`}
         status={!isNew ? development.status : undefined}
         breadcrumbs={[
-          { label: "Clients", href: "/clients" },
+          { label: t("Clients"), href: "/clients" },
           { label: clientName, href: `/clients/${resolvedClientId}` },
           { label: storyTitle, href: `/clients/${resolvedClientId}/stories/${resolvedStoryId}` },
-          { label: isNew ? "New Development" : development.title },
+          { label: isNew ? t("New Development") : development.title },
         ]}
         onSave={busy ? undefined : handleSubmit(onSubmit, onInvalid)}
         onDelete={!isNew && !busy ? () => setConfirmDelete(true) : undefined}
@@ -227,12 +230,12 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
         backHref={resolvedClientId && resolvedStoryId ? `/clients/${resolvedClientId}/stories/${resolvedStoryId}` : "/developments"}
       >
         {/* Common fields */}
-        <FormSection title="General">
+        <FormSection title={t("General")}>
           {allClients && (
             <Select
-              label="Client *"
+              label={t("Client *")}
               options={[
-                { value: "", label: "— Select a client —" },
+                { value: "", label: t("— Select a client —") },
                 ...allClients.map((c) => ({ value: c.id, label: c.name + (c.code ? ` (${c.code})` : "") })),
               ]}
               value={pickedClientId}
@@ -246,7 +249,7 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
           )}
           {allStories && (
             <Select
-              label="Story *"
+              label={t("Story *")}
               options={[
                 { value: "", label: pickedClientId ? "— Select a story —" : "— Select a client first —" },
                 ...filteredStories.map((s) => ({ value: s.id, label: s.reference ? `${s.reference} – ${s.title}` : s.title })),
@@ -260,12 +263,12 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
             />
           )}
           <Input
-            label="Title *"
+            label={t("Title *")}
             error={errors.title?.message}
             {...register("title")}
           />
           <Select
-            label="Type *"
+            label={t("Type *")}
             options={[
               // For XML-imported components whose type isn't in DEVELOPMENT_TYPE_MAP:
               // show their detected type as a labelled first option so the form stays
@@ -273,40 +276,40 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
               ...(!isKnownDevType
                 ? [{ value: selectedType, label: `${resolveSnLabel(selectedType)} — non mappé` }]
                 : []),
-              ...DEVELOPMENT_TYPE_OPTIONS,
+              ...DEVELOPMENT_TYPE_OPTIONS.map(option => ({ ...option, label: t(option.label) })),
             ]}
             value={selectedType}
             onChange={(e) => handleTypeChange(e.target.value)}
           />
           <Input
-            label="Target Table"
-            placeholder="incident"
+            label={t("Target Table")}
+            placeholder={t("incident")}
             {...register("target_table")}
           />
           <Select
-            label="Status"
-            options={STATUS_OPTIONS}
+            label={t("Status")}
+            options={STATUS_OPTIONS.map(option => ({ ...option, label: t(option.label) }))}
             {...register("status")}
           />
           <Input
-            label="Application Scope"
-            placeholder="global"
+            label={t("Application Scope")}
+            placeholder={t("global")}
             {...register("application_scope")}
           />
           <Input
-            label="Update Set"
-            placeholder="Default"
+            label={t("Update Set")}
+            placeholder={t("Default")}
             {...register("update_set")}
           />
         </FormSection>
 
-        <FormSection title="Description" columns={1}>
+        <FormSection title={t("Description")} columns={1}>
           <Textarea
-            label="Short Description"
+            label={t("Short Description")}
             {...register("short_description")}
           />
           <Textarea
-            label="Technical Notes"
+            label={t("Technical Notes")}
             {...register("technical_notes")}
             className="min-h-[100px]"
           />
@@ -317,7 +320,7 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
 
         {/* Raw XML source — shown for XML-imported developments */}
         {!isNew && development?.raw_xml && (
-          <FormSection title="Raw XML Source" columns={1}>
+          <FormSection title={t("Raw XML Source")} columns={1}>
             <CodeEditor
               value={development.raw_xml}
               onChange={() => {}}
@@ -334,8 +337,8 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDelete}
         loading={deleting}
-        title="Delete development"
-        message={`Delete "${development?.title}"?`}
+        title={t("Delete development")}
+        message={t('Delete "{name}"?', { name: development?.title ?? "" })}
       />
     </>}
     </DevelopmentAttachments>

@@ -1,4 +1,6 @@
 "use client";
+import { UiText } from "@/i18n/UiText";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -43,7 +45,7 @@ const defaultColumns: ListColumn<DevelopmentWithRelations>[] = [
     </span>
   )},
   { key: "development_type", label: "Type", visible: true, order: 2, render: (row) =>
-    DEVELOPMENT_TYPE_MAP[row.development_type as keyof typeof DEVELOPMENT_TYPE_MAP]?.label ?? resolveSnLabel(row.development_type)
+    <UiText text={DEVELOPMENT_TYPE_MAP[row.development_type as keyof typeof DEVELOPMENT_TYPE_MAP]?.label ?? resolveSnLabel(row.development_type)} />
   },
   { key: "target_table", label: "Table", visible: true, order: 3 },
   { key: "story", label: "Story", visible: true, order: 4, render: (row) =>
@@ -63,6 +65,7 @@ interface Props {
 }
 
 export function DevelopmentListClient({ developments }: Props) {
+  const t = useT();
   const router = useRouter();
   const clientOptions = useMemo(() => {
     const clients = new Map<string, string>();
@@ -82,14 +85,14 @@ export function DevelopmentListClient({ developments }: Props) {
   }, [developments]);
   const developmentFilterFields = useMemo<FilterField[]>(() => [
     ...filterFields.slice(0, 3),
-    { key: "story", label: "Story", type: "select", options: storyOptions, getValue: (row) => (row as DevelopmentWithRelations).stories?.title ?? "" },
-    { key: "client", label: "Client", type: "select", options: clientOptions, getValue: (row) => (row as DevelopmentWithRelations).clients?.name ?? "" },
+    { key: "story", label: t("Story"), type: "select", options: storyOptions, getValue: (row) => (row as DevelopmentWithRelations).stories?.title ?? "" },
+    { key: "client", label: t("Client"), type: "select", options: clientOptions, getValue: (row) => (row as DevelopmentWithRelations).clients?.name ?? "" },
     ...filterFields.slice(3),
-  ], [clientOptions, storyOptions]);
+  ], [clientOptions, storyOptions, t]);
 
   async function handleDeleteSelected(ids: string[]) {
     await deleteDevelopments(ids);
-    toast.success(`${ids.length} développement${ids.length > 1 ? "s" : ""} supprimé${ids.length > 1 ? "s" : ""}.`);
+    toast.success(t("{count} developments deleted.", { count: ids.length }));
     router.refresh();
   }
 
@@ -102,17 +105,18 @@ export function DevelopmentListClient({ developments }: Props) {
   }
 
   return (
-    <div className="h-[calc(100vh-5rem)] min-h-0 flex flex-col">
+    <div className="workspace-list-page min-h-0 flex flex-col">
       <div className="flex items-center justify-between mb-4 flex-shrink-0">
         <div>
-          <h1 className="text-lg font-semibold text-sn-text">Developments</h1>
-          <p className="text-xs text-sn-text-muted mt-0.5">All ServiceNow developments</p>
+          <h1 className="workspace-page-title">{t("Developments")}</h1>
+          <p className="text-xs text-sn-text-muted mt-0.5">{t("All ServiceNow developments")}</p>
         </div>
       </div>
 
       <ServiceNowList
+        copyKind="development"
         className="flex-1"
-        title="Developments"
+        title={t("Developments")}
         data={developments}
         columns={defaultColumns}
         filterFields={developmentFilterFields}
@@ -120,7 +124,7 @@ export function DevelopmentListClient({ developments }: Props) {
         onNew={() => router.push("/developments/new")}
         onRefresh={() => router.refresh()}
         onDeleteSelected={handleDeleteSelected}
-        emptyMessage="No developments yet. Create a story and add developments from there."
+        emptyMessage={t("No developments yet. Create a story and add developments from there.")}
       />
     </div>
   );

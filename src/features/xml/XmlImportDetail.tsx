@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
@@ -78,6 +79,7 @@ interface ComponentsTableProps {
 }
 
 function ComponentsTable({ components }: ComponentsTableProps) {
+  const t = useT();
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set());
 
   const grouped: Record<string, ParsedSummaryComponent[]> = {};
@@ -104,11 +106,9 @@ function ComponentsTable({ components }: ComponentsTableProps) {
         <thead>
           <tr className="bg-sn-bg border-b border-sn-border">
             <th className="text-left px-3 py-2 font-semibold text-sn-text-muted uppercase tracking-wider">
-              Type
-            </th>
+              {t("Type")}</th>
             <th className="text-right px-3 py-2 font-semibold text-sn-text-muted uppercase tracking-wider w-16">
-              Nb
-            </th>
+              {t("Nb")}</th>
           </tr>
         </thead>
         <tbody>
@@ -224,6 +224,7 @@ function DevelopmentsCreatedList({ developments }: DevListProps) {
 
 // ── Main component ─────────────────────────────────────────────────────────
 export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) {
+  const t = useT();
   const router = useRouter();
   const [summary, setSummary] = useState<ParsedSummary | null>(
     extractSummary(xmlImport.parsed_summary)
@@ -246,10 +247,10 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
     setDeleting(true);
     try {
       await deleteXmlImport(xmlImport.id);
-      toast.success("Import XML supprimé.");
+      toast.success(t("Import XML supprimé."));
       router.push("/xml-imports");
     } catch (err) {
-      toast.error("Erreur : " + String(err));
+      toast.error(t("Erreur : ") + String(err));
     } finally {
       setDeleting(false);
       setConfirmDelete(false);
@@ -270,7 +271,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
         `Re-analyse terminée · ${newSummary.totalDetected} composant(s) détecté(s).`
       );
     } catch (err) {
-      toast.error("Erreur lors de la re-analyse : " + String(err));
+      toast.error(t("Erreur lors de la re-analyse : ") + String(err));
     } finally {
       setReanalyzing(false);
     }
@@ -280,9 +281,9 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
     setCopying(true);
     try {
       await copyXmlToClipboard(xmlImport.raw_xml);
-      toast.success("XML copié dans le presse-papiers.");
+      toast.success(t("XML copié dans le presse-papiers."));
     } catch {
-      toast.error("Impossible de copier le XML.");
+      toast.error(t("Impossible de copier le XML."));
     } finally {
       setCopying(false);
     }
@@ -296,7 +297,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
     <div className="max-w-5xl space-y-4">
       <Breadcrumbs
         items={[
-          { label: "XML Imports", href: "/xml-imports" },
+          { label: t("XML Imports"), href: "/xml-imports" },
           { label: xmlImport.filename },
         ]}
         className="mb-1"
@@ -310,12 +311,11 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
             <div>
               <h1 className="text-base font-semibold text-sn-text">{xmlImport.filename}</h1>
               <p className="text-xs text-sn-text-muted mt-0.5">
-                Importé le {formatDateTime(xmlImport.created_at)}
+                {t("Importé le")}{formatDateTime(xmlImport.created_at)}
                 {" · "}
                 {fileSize}
                 {" · "}
-                {totalLines.toLocaleString()} lignes
-              </p>
+                {totalLines.toLocaleString()} {t("lignes")}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -328,16 +328,14 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
               loading={deleting}
               className="text-red-600 border-red-200 hover:bg-red-50"
             >
-              Supprimer
-            </Button>
+              {t("Supprimer")}</Button>
           </div>
         </div>
 
         <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-x-4 gap-y-3">
           <div>
             <p className="text-[11px] text-sn-text-muted mb-1 uppercase tracking-wider font-semibold">
-              Client
-            </p>
+              {t("Client")}</p>
             {xmlImport.clients ? (
               <button
                 onClick={() => router.push(`/clients/${xmlImport.clients!.id}`)}
@@ -354,8 +352,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
 
           <div>
             <p className="text-[11px] text-sn-text-muted mb-1 uppercase tracking-wider font-semibold">
-              Story
-            </p>
+              {t("Story")}</p>
             {xmlImport.stories && xmlImport.clients ? (
               <button
                 onClick={() =>
@@ -376,23 +373,21 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
 
           <div>
             <p className="text-[11px] text-sn-text-muted mb-1 uppercase tracking-wider font-semibold">
-              Développements créés
-            </p>
+              {t("Développements créés")}</p>
             {summary?.importResult ? (
               <div className="flex flex-col gap-0.5">
                 {summary.importResult.created > 0 && (
                   <span className="text-sm font-semibold text-green-700">
-                    +{summary.importResult.created} créé{summary.importResult.created > 1 ? "s" : ""}
+                    +{summary.importResult.created} {t("créé")}{summary.importResult.created > 1 ? "s" : ""}
                   </span>
                 )}
                 {summary.importResult.updated > 0 && (
                   <span className="text-sm font-semibold text-amber-700">
-                    ↻{summary.importResult.updated} mis à jour
-                  </span>
+                    ↻{summary.importResult.updated} {t("mis à jour")}</span>
                 )}
                 {summary.importResult.skipped > 0 && (
                   <span className="text-xs text-sn-text-muted">
-                    {summary.importResult.skipped} ignoré{summary.importResult.skipped > 1 ? "s" : ""}
+                    {summary.importResult.skipped} {t("ignoré")}{summary.importResult.skipped > 1 ? "s" : ""}
                   </span>
                 )}
               </div>
@@ -405,8 +400,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
 
           <div>
             <p className="text-[11px] text-sn-text-muted mb-1 uppercase tracking-wider font-semibold">
-              Composants détectés
-            </p>
+              {t("Composants détectés")}</p>
             <p className="text-sm text-sn-text">{displayTotal}</p>
           </div>
         </div>
@@ -414,7 +408,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
 
       {/* ── Analysis card ── */}
       <Card
-        title="Analyse"
+        title={t("Analyse")}
         actions={
           <Button
             variant="secondary"
@@ -429,8 +423,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
             onClick={handleReanalyze}
             disabled={reanalyzing}
           >
-            Re-analyser
-          </Button>
+            {t("Re-analyser")}</Button>
         }
       >
         {summary ? (
@@ -439,8 +432,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
             {summary.components && summary.components.length > 0 && (
               <div>
                 <p className="text-[11px] font-semibold text-sn-text-muted uppercase tracking-wider mb-2">
-                  Composants détectés
-                </p>
+                  {t("Composants détectés")}</p>
                 <ComponentsTable components={summary.components} />
               </div>
             )}
@@ -449,8 +441,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
             {Object.keys(summary.byAction).length > 0 && (
               <div>
                 <p className="text-[11px] font-semibold text-sn-text-muted uppercase tracking-wider mb-2">
-                  Actions
-                </p>
+                  {t("Actions")}</p>
                 <div className="flex gap-2 flex-wrap">
                   {Object.entries(summary.byAction).map(([action, count]) => (
                     <span
@@ -473,8 +464,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
             {Object.keys(summary.byTable).length > 0 && (
               <div>
                 <p className="text-[11px] font-semibold text-sn-text-muted uppercase tracking-wider mb-2">
-                  Tables détectées
-                </p>
+                  {t("Tables détectées")}</p>
                 <div className="flex gap-2 flex-wrap">
                   {Object.entries(summary.byTable)
                     .sort(([, a], [, b]) => b - a)
@@ -485,7 +475,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
                       >
                         {table}
                         {count > 1 && (
-                          <span className="font-bold ml-0.5">×{count}</span>
+                          <span className="font-bold ml-0.5">{t("×")}{count}</span>
                         )}
                       </span>
                     ))}
@@ -499,7 +489,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
                 <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs font-semibold text-yellow-800 mb-1">
-                    Avertissements ({summary.warnings.length})
+                    {t("Avertissements (")}{summary.warnings.length})
                   </p>
                   <ul className="space-y-0.5">
                     {summary.warnings.map((w, i) => (
@@ -517,12 +507,9 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
             <BarChart3 className="w-10 h-10 text-sn-text-muted/30" />
             <div>
               <p className="text-sm font-medium text-sn-text">
-                Aucune analyse détaillée disponible
-              </p>
+                {t("Aucune analyse détaillée disponible")}</p>
               <p className="text-xs text-sn-text-muted mt-1 max-w-xs mx-auto">
-                Cliquez sur &ldquo;Re-analyser&rdquo; pour calculer la répartition par type,
-                table et action des composants ServiceNow de ce fichier.
-              </p>
+                {t("Cliquez sur “Re-analyser“ pour calculer la répartition par type, table et action des composants ServiceNow de ce fichier.")}</p>
             </div>
             <Button
               variant="secondary"
@@ -537,8 +524,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
               onClick={handleReanalyze}
               disabled={reanalyzing}
             >
-              Re-analyser maintenant
-            </Button>
+              {t("Re-analyser maintenant")}</Button>
           </div>
         )}
       </Card>
@@ -552,7 +538,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
 
       {/* ── Raw XML card ── */}
       <Card
-        title="Raw XML"
+        title={t("Raw XML")}
         actions={
           <div className="flex items-center gap-1.5">
             <Button
@@ -561,8 +547,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
               icon={<Eye className="w-3.5 h-3.5" />}
               onClick={() => setShowFullXml(true)}
             >
-              Voir complet
-            </Button>
+              {t("Voir complet")}</Button>
             <Button
               variant="secondary"
               size="sm"
@@ -576,16 +561,14 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
               onClick={handleCopy}
               disabled={copying}
             >
-              Copier
-            </Button>
+              {t("Copier")}</Button>
             <Button
               variant="secondary"
               size="sm"
               icon={<Download className="w-3.5 h-3.5" />}
               onClick={handleDownload}
             >
-              Télécharger
-            </Button>
+              {t("Télécharger")}</Button>
           </div>
         }
       >
@@ -593,9 +576,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
           <div className="flex items-center gap-2 mb-2">
             <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-xs font-medium">
               <AlertTriangle className="w-3 h-3" />
-              Aperçu — {totalLines.toLocaleString()} lignes au total · fichier complet via
-              &ldquo;Voir complet&rdquo; ou &ldquo;Télécharger&rdquo;
-            </span>
+              {t("Aperçu —")}{totalLines.toLocaleString()} {t("lignes au total · fichier complet via “Voir complet“ ou “Télécharger“")}</span>
           </div>
         )}
         <pre className="text-xs font-mono bg-sn-bg rounded border border-sn-border p-3 overflow-auto max-h-80 whitespace-pre">
@@ -607,8 +588,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
       {/* ── Footer ── */}
       <div className="flex items-center gap-2 pb-6">
         <Button variant="secondary" onClick={() => router.push("/xml-imports")} data-navigation-feedback="true">
-          Retour à la liste
-        </Button>
+          {t("Retour à la liste")}</Button>
         {xmlImport.stories && xmlImport.clients && (
           <Button
             onClick={() =>
@@ -618,8 +598,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
             }
             data-navigation-feedback="true"
           >
-            Voir la Story
-          </Button>
+            {t("Voir la Story")}</Button>
         )}
       </div>
 
@@ -629,7 +608,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
         onClose={() => setConfirmDelete(false)}
         onConfirm={handleDelete}
         loading={deleting}
-        title="Supprimer l'import XML"
+        title={t("Supprimer l'import XML")}
         message={`Supprimer "${xmlImport.filename}" ? Les développements créés depuis cet import ne seront pas supprimés.`}
       />
 
@@ -654,19 +633,16 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
               onClick={handleCopy}
               disabled={copying}
             >
-              Copier
-            </Button>
+              {t("Copier")}</Button>
             <Button
               variant="secondary"
               size="sm"
               icon={<Download className="w-3.5 h-3.5" />}
               onClick={handleDownload}
             >
-              Télécharger
-            </Button>
+              {t("Télécharger")}</Button>
             <Button variant="secondary" onClick={() => setShowFullXml(false)}>
-              Fermer
-            </Button>
+              {t("Fermer")}</Button>
           </>
         }
       >
@@ -690,8 +666,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
             loading={
               <div className="flex items-center justify-center h-full gap-2 text-sn-text-muted text-sm">
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Chargement de l&apos;éditeur…
-              </div>
+                {t("Chargement de l'éditeur…")}</div>
             }
           />
         </div>
@@ -702,10 +677,11 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
 
 // No-developments placeholder (kept for import completeness — not currently rendered)
 export function XmlImportNoDevsPlaceholder() {
+  const t = useT();
   return (
     <div className="flex flex-col items-center py-8 gap-3 text-center">
       <PackageOpen className="w-10 h-10 text-sn-text-muted/30" />
-      <p className="text-sm text-sn-text-muted">Aucun développement créé depuis cet import.</p>
+      <p className="text-sm text-sn-text-muted">{t("Aucun développement créé depuis cet import.")}</p>
     </div>
   );
 }

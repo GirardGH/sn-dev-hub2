@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -42,6 +43,7 @@ interface Props {
 }
 
 export function XmlImportListClient({ imports }: Props) {
+  const t = useT();
   const router = useRouter();
   const clientOptions = useMemo(() => {
     const clients = new Map<string, string>();
@@ -61,14 +63,14 @@ export function XmlImportListClient({ imports }: Props) {
   }, [imports]);
   const xmlImportFilterFields = useMemo<FilterField[]>(() => [
     filterFields[0],
-    { key: "client", label: "Client", type: "select", options: clientOptions, getValue: (row) => (row as XmlImportWithRelations).clients?.name ?? "" },
-    { key: "story", label: "Story", type: "select", options: storyOptions, getValue: (row) => (row as XmlImportWithRelations).stories?.title ?? "" },
+    { key: "client", label: t("Client"), type: "select", options: clientOptions, getValue: (row) => (row as XmlImportWithRelations).clients?.name ?? "" },
+    { key: "story", label: t("Story"), type: "select", options: storyOptions, getValue: (row) => (row as XmlImportWithRelations).stories?.title ?? "" },
     ...filterFields.slice(1),
-  ], [clientOptions, storyOptions]);
+  ], [clientOptions, storyOptions, t]);
 
   async function handleDeleteSelected(ids: string[]) {
     await deleteXmlImports(ids);
-    toast.success(`${ids.length} import${ids.length > 1 ? "s" : ""} supprimé${ids.length > 1 ? "s" : ""}.`);
+    toast.success(t("{count} imports deleted.", { count: ids.length }));
     router.refresh();
   }
 
@@ -76,13 +78,13 @@ export function XmlImportListClient({ imports }: Props) {
     <div>
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-lg font-semibold text-sn-text">XML Imports</h1>
-          <p className="text-xs text-sn-text-muted mt-0.5">ServiceNow XML update set imports</p>
+          <h1 className="workspace-page-title">{t("XML Imports")}</h1>
+          <p className="text-xs text-sn-text-muted mt-0.5">{t("ServiceNow XML update set imports")}</p>
         </div>
       </div>
 
       <ServiceNowList
-        title="XML Imports"
+        title={t("XML Imports")}
         data={imports}
         columns={defaultColumns}
         filterFields={xmlImportFilterFields}
@@ -90,8 +92,8 @@ export function XmlImportListClient({ imports }: Props) {
         onNew={() => router.push("/xml-imports/new")}
         onRefresh={() => router.refresh()}
         onDeleteSelected={handleDeleteSelected}
-        newLabel="Import XML"
-        emptyMessage="No XML imports yet. Upload a ServiceNow update set XML."
+        newLabel={t("Import XML")}
+        emptyMessage={t("No XML imports yet. Upload a ServiceNow update set XML.")}
       />
     </div>
   );

@@ -1,4 +1,8 @@
 "use client";
+import { useSpace } from "@/features/spaces/SpaceProvider";
+import { CopyToSpace } from "@/features/spaces/CopyToSpace";
+import { canWrite, canDelete, type CopyKind } from "@/features/spaces/space.types";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useState, useMemo } from "react";
 import {
@@ -36,6 +40,7 @@ interface RelatedListProps<T extends { id: string }> {
   emptyMessage?: string;
   defaultCollapsed?: boolean;
   onDeleteSelected?: (ids: string[]) => Promise<void>;
+  copyKind?: CopyKind;
 }
 
 export function RelatedList<T extends { id: string }>({
@@ -50,7 +55,12 @@ export function RelatedList<T extends { id: string }>({
   emptyMessage = "No records.",
   defaultCollapsed = false,
   onDeleteSelected,
+  copyKind,
 }: RelatedListProps<T>) {
+  const t = useT();
+  const space = useSpace();
+  const writable = space ? canWrite(space.active.role) : true;
+  const removable = space ? canDelete(space.active.role) : true;
   const [collapsed, setCollapsed] = useState(defaultCollapsed);
   const [sortKey, setSortKey] = useState<string>("");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -69,13 +79,17 @@ export function RelatedList<T extends { id: string }>({
     });
   }, [data, sortKey, sortDir]);
 
+  const copyable = !!copyKind && !!space?.spaces.some(target => target.id !== space.active.id && canWrite(target.role));
+  const selectable = copyable || (removable && !!onDeleteSelected);
+  const selectedIds = sortedData.filter(row => selected.has(row.id)).map(row => row.id);
+
   function toggleSort(key: string) {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir("asc"); }
   }
 
   function toggleSelectAll() {
-    if (selected.size === sortedData.length && sortedData.length > 0) {
+    if (selectedIds.length === sortedData.length && sortedData.length > 0) {
       setSelected(new Set());
     } else {
       setSelected(new Set(sortedData.map((r) => r.id)));
@@ -86,11 +100,11 @@ export function RelatedList<T extends { id: string }>({
     if (!onDeleteSelected) return;
     setDeleting(true);
     try {
-      await onDeleteSelected(Array.from(selected));
+      await onDeleteSelected(selectedIds);
       setSelected(new Set());
       onRefresh?.();
     } catch (err) {
-      toast.error("Erreur lors de la suppression : " + String(err));
+      toast.error(t("Erreur lors de la suppression : ") + String(err));
     } finally {
       setDeleting(false);
       setConfirmBulkDelete(false);
@@ -98,63 +112,63 @@ export function RelatedList<T extends { id: string }>({
   }
 
   return (
-    <div className="bg-white border border-sn-border rounded-sm shadow-sm mt-4 overflow-hidden">
+    <div className="workspace-card mt-5 overflow-hidden">
       {/* Header — ServiceNow-style blue title bar */}
       <div
-        className="flex items-center justify-between px-3 py-2 bg-sn-accent cursor-pointer select-none"
+        className="flex items-center justify-between flex-wrap gap-3 px-4 py-3 bg-sn-table-header border-b border-sn-border cursor-pointer select-none"
         onClick={() => setCollapsed(!collapsed)}
       >
         <div className="flex items-center gap-2">
           <ChevronRight
             className={cn(
-              "w-3.5 h-3.5 text-white/70 transition-transform",
+              "w-3.5 h-3.5 text-sn-text-muted transition-transform",
               !collapsed && "rotate-90"
             )}
           />
-          <span className="text-[13px] font-semibold text-white">{title}</span>
-          <span className="text-[11px] text-white/60 bg-white/15 rounded-sm px-1.5 py-0.5">
+          <span className="text-[13px] font-semibold text-sn-text">{title}</span>
+          <span className="text-[11px] text-sn-text-muted bg-white rounded-md px-1.5 py-0.5">
             {data.length}
           </span>
-          {selected.size > 0 && (
-            <span className="text-[11px] text-white/80 bg-white/20 rounded-sm px-1.5 py-0.5">
-              {selected.size} sélectionné{selected.size > 1 ? "s" : ""}
+          {selectedIds.length > 0 && (
+            <span className="text-[11px] text-sn-accent bg-sn-accent-light rounded-md px-1.5 py-0.5">
+              {selectedIds.length} {t("sélectionné")}{selectedIds.length > 1 ? "s" : ""}
             </span>
           )}
         </div>
 
-        <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
           {extraActions}
+          {copyable && copyKind && selectedIds.length > 0 && <CopyToSpace kind={copyKind} ids={selectedIds} />}
           {/* Refresh / Bulk delete — delete replaces refresh when rows are selected */}
-          {onDeleteSelected && selected.size > 0 ? (
+          {removable && onDeleteSelected && selectedIds.length > 0 ? (
             <Button
               size="sm"
               icon={<Trash2 className="w-3.5 h-3.5" />}
               onClick={() => setConfirmBulkDelete(true)}
               loading={deleting}
-              className="bg-white/20 text-white hover:bg-red-500 border border-white/30 shadow-none font-semibold"
+              className="bg-red-50 text-sn-danger hover:bg-red-100 border border-red-200 shadow-none font-semibold"
             >
-              Supprimer ({selected.size})
+              {t("Supprimer (")}{selectedIds.length})
             </Button>
           ) : onRefresh ? (
             <Button
               variant="ghost"
               size="sm"
-              icon={<RefreshCw className="w-3.5 h-3.5 text-white/70" />}
+              icon={<RefreshCw className="w-3.5 h-3.5 text-sn-text-muted" />}
               onClick={onRefresh}
               loading={loading}
-              className="hover:bg-white/15 text-white/70 hover:text-white"
+              className="hover:bg-sn-accent-light text-sn-text-muted hover:text-sn-accent"
             />
           ) : null}
-          {onNew && (
+          {writable && onNew && (
             <Button
               size="sm"
               icon={<Plus className="w-3.5 h-3.5" />}
               onClick={onNew}
               data-navigation-feedback="true"
-              className="bg-white text-sn-accent hover:bg-white/90 border-0 shadow-none font-semibold"
+              className="bg-sn-accent text-white hover:bg-sn-accent-hover border-0 shadow-none font-semibold"
             >
-              New
-            </Button>
+              {t("New")}</Button>
           )}
         </div>
       </div>
@@ -164,11 +178,12 @@ export function RelatedList<T extends { id: string }>({
         <div className="overflow-x-auto">
           <table className="w-full text-[13px]">
             <thead>
-              <tr className="border-b-2 border-sn-border bg-sn-table-header">
-                {onDeleteSelected && (
-                  <th className="w-8 px-3 py-2">
+              <tr className="border-b border-sn-border bg-sn-table-header">
+                {selectable && (
+                  <th className="w-8 px-4 py-3">
                     <Checkbox
-                      checked={selected.size === sortedData.length && sortedData.length > 0}
+                      aria-label={t("Select all visible records")}
+                      checked={selectedIds.length === sortedData.length && sortedData.length > 0}
                       onChange={toggleSelectAll}
                     />
                   </th>
@@ -176,11 +191,11 @@ export function RelatedList<T extends { id: string }>({
                 {visibleCols.map((col) => (
                   <th
                     key={col.key}
-                    className="px-3 py-2 text-left text-[11px] font-semibold text-sn-text-muted uppercase tracking-wider cursor-pointer hover:text-sn-text select-none"
+                    className="px-4 py-3 text-left text-[11px] font-semibold text-sn-text-muted uppercase tracking-wider cursor-pointer hover:text-sn-text select-none"
                     onClick={() => toggleSort(col.key)}
                   >
                     <span className="flex items-center gap-1">
-                      {col.label}
+                      {t(col.label)}
                       {sortKey === col.key ? (
                         sortDir === "asc" ? (
                           <ChevronUp className="w-3 h-3 text-sn-accent" />
@@ -198,7 +213,7 @@ export function RelatedList<T extends { id: string }>({
             <tbody>
               {loading && (
                 <tr>
-                  <td colSpan={visibleCols.length + (onDeleteSelected ? 1 : 0)} className="px-3 py-6 text-center">
+                  <td colSpan={visibleCols.length + (selectable ? 1 : 0)} className="px-3 py-6 text-center">
                     <Loader2 className="w-4 h-4 animate-spin text-sn-accent mx-auto" />
                   </td>
                 </tr>
@@ -206,7 +221,7 @@ export function RelatedList<T extends { id: string }>({
               {!loading && sortedData.length === 0 && (
                 <tr>
                   <td
-                    colSpan={visibleCols.length + (onDeleteSelected ? 1 : 0)}
+                    colSpan={visibleCols.length + (selectable ? 1 : 0)}
                     className="px-3 py-4 text-center text-[12px] text-sn-text-muted"
                   >
                     {emptyMessage}
@@ -214,26 +229,27 @@ export function RelatedList<T extends { id: string }>({
                 </tr>
               )}
               {!loading &&
-                sortedData.map((row, idx) => (
+                sortedData.map((row) => (
                   <tr
                     key={row.id}
+                    data-selected={selected.has(row.id) ? "true" : undefined}
                     onClick={() => onRowClick?.(row)}
                     data-navigation-feedback={onRowClick ? "true" : undefined}
                     className={cn(
-                      "border-b border-sn-border last:border-0 transition-colors group",
-                      idx % 2 === 1 ? "bg-sn-table-stripe" : "bg-white",
-                      onRowClick && "cursor-pointer hover:bg-sn-accent-light"
+                      "sn-list-row border-b border-sn-border last:border-0 transition-colors group",
+                      onRowClick && "cursor-pointer"
                     )}
                   >
-                    {onDeleteSelected && (
-                      <td className="w-8 px-3 py-2" onClick={(e) => e.stopPropagation()} data-navigation-feedback="ignore">
+                    {selectable && (
+                      <td className="w-8 px-4 py-3" onClick={(e) => e.stopPropagation()} data-navigation-feedback="ignore">
                         <div className={cn(
                           "transition-opacity",
-                          selected.has(row.id) || selected.size > 0
+                          selected.has(row.id) || selectedIds.length > 0
                             ? "opacity-100"
                             : "opacity-0 group-hover:opacity-100"
                         )}>
                           <Checkbox
+                            aria-label={t("Select record {id}", {id: row.id})}
                             checked={selected.has(row.id)}
                             onChange={() => {
                               const next = new Set(selected);
@@ -245,7 +261,7 @@ export function RelatedList<T extends { id: string }>({
                       </td>
                     )}
                     {visibleCols.map((col) => (
-                      <td key={col.key} className="px-3 py-2 text-sn-text">
+                      <td key={col.key} className="px-4 py-3 text-sn-text">
                         {col.render
                           ? col.render(row)
                           : String((row as Record<string, unknown>)[col.key] ?? "—")}
@@ -263,8 +279,8 @@ export function RelatedList<T extends { id: string }>({
         onClose={() => setConfirmBulkDelete(false)}
         onConfirm={handleBulkDelete}
         loading={deleting}
-        title="Confirmer la suppression"
-        message={`Supprimer ${selected.size} enregistrement${selected.size > 1 ? "s" : ""} ? Cette action est irréversible.`}
+        title={t("Confirmer la suppression")}
+        message={t("Delete {count} records? This action cannot be undone.", { count: selectedIds.length })}
       />
     </div>
   );

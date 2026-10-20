@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/LanguageProvider";
 
 import { useState } from "react";
 import { Settings2, GripVertical, Eye, EyeOff } from "lucide-react";
@@ -19,6 +20,7 @@ interface ColumnConfiguratorProps {
 }
 
 export function ColumnConfigurator({ columns, onChange }: ColumnConfiguratorProps) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [local, setLocal] = useState<ColumnDef[]>([]);
 
@@ -59,26 +61,24 @@ export function ColumnConfigurator({ columns, onChange }: ColumnConfiguratorProp
         size="sm"
         icon={<Settings2 className="w-3.5 h-3.5" />}
         onClick={handleOpen}
-        title="Configure columns"
+        title={t("Configure columns")}
       >
-        Columns
-      </Button>
+        {t("Columns")}</Button>
 
       <Modal
         open={open}
         onClose={() => setOpen(false)}
-        title="Configure Columns"
+        title={t("Configure Columns")}
         size="sm"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave}>Save</Button>
+            <Button variant="secondary" onClick={() => setOpen(false)}>{t("Cancel")}</Button>
+            <Button onClick={handleSave}>{t("Save")}</Button>
           </>
         }
       >
         <p className="text-xs text-sn-text-muted mb-3">
-          Check/uncheck to show or hide columns. Drag to reorder.
-        </p>
+          {t("Check/uncheck to show or hide columns. Drag to reorder.")}</p>
         <div className="flex flex-col gap-1">
           {local.map((col, index) => (
             <div
@@ -90,13 +90,13 @@ export function ColumnConfigurator({ columns, onChange }: ColumnConfiguratorProp
                 checked={col.visible}
                 onChange={() => toggleVisible(col.key)}
               />
-              <span className="flex-1 text-sm text-sn-text">{col.label}</span>
+              <span className="flex-1 text-sm text-sn-text">{t(col.label)}</span>
               <div className="flex gap-1">
                 <button
                   onClick={() => moveUp(index)}
                   disabled={index === 0}
                   className="text-sn-text-muted hover:text-sn-text disabled:opacity-30 text-xs"
-                  title="Move up"
+                  title={t("Move up")}
                 >
                   ↑
                 </button>
@@ -104,7 +104,7 @@ export function ColumnConfigurator({ columns, onChange }: ColumnConfiguratorProp
                   onClick={() => moveDown(index)}
                   disabled={index === local.length - 1}
                   className="text-sn-text-muted hover:text-sn-text disabled:opacity-30 text-xs"
-                  title="Move down"
+                  title={t("Move down")}
                 >
                   ↓
                 </button>

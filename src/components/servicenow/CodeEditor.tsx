@@ -1,4 +1,7 @@
 "use client";
+import { useSpace } from "@/features/spaces/SpaceProvider";
+import { canWrite } from "@/features/spaces/space.types";
+import { useT } from "@/i18n/LanguageProvider";
 
 import dynamic from "next/dynamic";
 
@@ -25,10 +28,12 @@ export function CodeEditor({
   readOnly = false,
   label,
 }: CodeEditorProps) {
+  const t = useT();
+  const space = useSpace();
   return (
     <div className="flex flex-col gap-1">
       {label && (
-        <span className="text-xs font-medium text-sn-text-muted">{label}</span>
+        <span className="text-xs font-medium text-sn-text-muted">{label ? t(label) : label}</span>
       )}
       <div
         className="rounded overflow-hidden border border-sn-border"
@@ -42,7 +47,7 @@ export function CodeEditor({
           theme="vs-dark"
           loading={
             <div className="h-full bg-[#1e1e1e] flex items-center justify-center">
-              <span className="text-gray-400 text-xs font-mono">Loading editor…</span>
+              <span className="text-gray-400 text-xs font-mono">{t("Loading editor…")}</span>
             </div>
           }
           options={{
@@ -52,13 +57,19 @@ export function CodeEditor({
             lineNumbers: "on" as const,
             formatOnPaste: true,
             formatOnType: true,
-            readOnly,
+            readOnly: readOnly || (space ? !canWrite(space.active.role) : false),
             scrollBeyondLastLine: false,
             fontSize: 13,
             tabSize: 4,
             insertSpaces: true,
             folding: true,
             renderLineHighlight: "all",
+            renderWhitespace: "none",
+            unicodeHighlight: {
+              nonBasicASCII: false,
+              invisibleCharacters: false,
+              ambiguousCharacters: false,
+            },
           }}
         />
       </div>
