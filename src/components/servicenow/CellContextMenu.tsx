@@ -37,7 +37,7 @@ function CellFilterBar({ filters, remove, clear }: { filters: CellFilter[]; remo
   if (!filters.length) return null;
   return <div className="flex flex-wrap items-center gap-2 border-b border-sn-border bg-sn-accent-light px-4 py-2" role="region" aria-label={t("Cell filters")}>
     <span className="text-xs text-sn-text-muted">{t("Cell filters")}:</span>
-    {filters.map(f => <button key={f.id} type="button" onClick={() => remove(f.id)} title={t("Remove filter")} className="max-w-full rounded-md border border-sn-border bg-white px-2 py-1 text-left text-xs text-sn-text"><span className="break-all">{t(f.label)} {f.operator === "is" ? "=" : "≠"} {f.display || t("Empty value")}</span><span aria-hidden="true" className="ml-2">×</span><span className="sr-only">{t("Remove filter")}</span></button>)}
+    {filters.map(f => <button key={f.id} type="button" onClick={() => remove(f.id)} aria-label={`${t("Remove filter")}: ${t(f.label)} ${f.operator === "is" ? "=" : "≠"} ${f.display || t("Empty value")}`} title={t("Remove filter")} className="max-w-full rounded-md border border-sn-border bg-white px-2 py-1 text-left text-xs text-sn-text"><span className="break-all">{t(f.label)} {f.operator === "is" ? "=" : "≠"} {f.display || t("Empty value")}</span><span aria-hidden="true" className="ml-2">×</span></button>)}
     <button type="button" onClick={clear} className="px-2 py-1 text-xs font-medium text-sn-accent hover:underline">{t("Clear cell filters")}</button>
     <span className="text-xs text-sn-text-muted">{t("Filters apply to loaded records.")}</span>
   </div>;
