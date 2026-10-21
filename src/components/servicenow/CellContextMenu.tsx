@@ -8,6 +8,8 @@ type Cell = Omit<CellFilter, "id" | "operator" | "value"> & { value: unknown };
 type Menu = Omit<CellFilter, "id" | "operator"> & { x: number; y: number; anchor: HTMLElement };
 export function useCellFilters() {
   const [filters, setFilters] = useState<CellFilter[]>([]);
+  const [groupBy, setGroupBy] = useState<{key: string; label: string} | null>(null);
+  const [closedGroups, setClosedGroups] = useState<Set<string>>(new Set());
   const [menu, setMenu] = useState<Menu | null>(null);
   function open(event: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>, cell: Cell) {
     const value = cellValue(cell.value);
@@ -17,7 +19,7 @@ export function useCellFilters() {
     const keyboard = !("clientX" in event) || (event.clientX === 0 && event.clientY === 0);
     const x = keyboard ? rect.left : event.clientX;
     const y = keyboard ? rect.bottom : event.clientY;
-    setMenu({ ...cell, value, x: Math.max(8, Math.min(x, window.innerWidth - 280)), y: Math.max(8, Math.min(y, window.innerHeight - 190)), anchor: event.currentTarget });
+    setMenu({ ...cell, value, x: Math.max(8, Math.min(x, window.innerWidth - 280)), y: Math.max(8, Math.min(y, window.innerHeight - 270)), anchor: event.currentTarget });
   }
   function choose(operator: CellFilter["operator"]) {
     if (!menu) return;
@@ -26,11 +28,19 @@ export function useCellFilters() {
     setMenu(null);
     if (anchor.isConnected) anchor.focus({ preventScroll: true });
   }
+  function group() {
+    if (!menu) return;
+    setGroupBy({key: menu.key, label: menu.label}); setClosedGroups(new Set());
+    setMenu(null);
+    if (menu.anchor.isConnected) menu.anchor.focus({preventScroll: true});
+  }
+  const clearGrouping = () => { setGroupBy(null); setClosedGroups(new Set()); };
+  const toggleGroup = (key: string) => setClosedGroups(previous => { const next = new Set(previous); if (next.has(key)) next.delete(key); else next.add(key); return next; });
   const ui = <>
     <CellFilterBar filters={filters} remove={id => setFilters(previous => previous.filter(f => f.id !== id))} clear={() => setFilters([])} />
-    {menu && <ValueMenu menu={menu} close={() => setMenu(null)} choose={choose} />}
+    {menu && <ValueMenu menu={menu} close={() => setMenu(null)} choose={choose} group={group} ungroup={clearGrouping} grouped={!!groupBy} />}
   </>;
-  return { filters, open, ui };
+  return { filters, open, ui, groupBy, closedGroups, toggleGroup, clearGrouping, setClosedGroups };
 }
 function CellFilterBar({ filters, remove, clear }: { filters: CellFilter[]; remove: (id: string) => void; clear: () => void }) {
   const t = useT();
@@ -42,7 +52,7 @@ function CellFilterBar({ filters, remove, clear }: { filters: CellFilter[]; remo
     <span className="text-xs text-sn-text-muted">{t("Filters apply to loaded records.")}</span>
   </div>;
 }
-function ValueMenu({ menu, close, choose }: { menu: Menu; close: () => void; choose: (operator: CellFilter["operator"]) => void }) {
+function ValueMenu({ menu, close, choose, group, ungroup, grouped }: { menu: Menu; close: () => void; choose: (operator: CellFilter["operator"]) => void; group: () => void; ungroup: () => void; grouped: boolean }) {
   const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -66,5 +76,8 @@ function ValueMenu({ menu, close, choose }: { menu: Menu; close: () => void; cho
     <div className="border-b border-sn-border px-3 py-2 text-xs"><p className="font-semibold text-sn-text">{t(menu.label)}</p><p className="mt-1 truncate text-sn-text-muted" title={menu.display}>{menu.display || t("Empty value")}</p></div>
     <button type="button" role="menuitem" onClick={() => choose("is")} className="block w-full px-3 py-2 text-left text-sm text-sn-text hover:bg-sn-accent-light focus:bg-sn-accent-light focus:outline-none">{t("Show Matching")}</button>
     <button type="button" role="menuitem" onClick={() => choose("is_not")} className="block w-full px-3 py-2 text-left text-sm text-sn-text hover:bg-sn-accent-light focus:bg-sn-accent-light focus:outline-none">{t("Filter Out")}</button>
+    <div className="my-1 border-t border-sn-border" />
+    <button type="button" role="menuitem" onClick={group} className="block w-full px-3 py-2 text-left text-sm text-sn-text hover:bg-sn-accent-light focus:bg-sn-accent-light focus:outline-none">{t("Group by this field")}</button>
+    {grouped && <button type="button" role="menuitem" onClick={() => { ungroup(); close(); if (menu.anchor.isConnected) menu.anchor.focus({preventScroll: true}); }} className="block w-full px-3 py-2 text-left text-sm text-sn-text hover:bg-sn-accent-light focus:bg-sn-accent-light focus:outline-none">{t("Remove grouping")}</button>}
   </div>, document.body);
 }

@@ -1,6 +1,20 @@
 const fs=require('node:fs'),assert=require('node:assert/strict'),ts=require('typescript');
-const result=ts.transpileModule(fs.readFileSync('src/components/servicenow/cellFilters.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}});const mod={exports:{}};new Function('exports','require','module',result.outputText)(mod.exports,require,mod);const {cellValue,contextValue,matchesCellFilters,addCellFilter}=mod.exports;
+const result=ts.transpileModule(fs.readFileSync('src/components/servicenow/cellFilters.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}});const mod={exports:{}};new Function('exports','require','module',result.outputText)(mod.exports,require,mod);const {cellValue,contextValue,matchesCellFilters,addCellFilter,groupedEntries}=mod.exports;
 const rows=[{id:'a',status:'draft',type:'BR',client_id:'client-a',name:'OBS',empty:null,count:0,active:false},{id:'b',status:'draft',type:'UI',client_id:'client-b',name:'OBS',empty:'',count:2,active:true},{id:'c',status:'done',type:'BR',client_id:'client-a',name:'OBS',count:1,active:true}];
 const before=JSON.stringify(rows);const read=(r,k)=>contextValue(r,k,r[k]);const filter=(key,value,operator='is')=>({id:key+operator,key,label:key,value:cellValue(value),display:String(value??''),operator});const select=filters=>rows.filter(row=>matchesCellFilters(row,filters,read)).map(r=>r.id);
 assert.deepEqual(select([filter('status','DRAFT')]),['a','b']);assert.deepEqual(select([filter('status','draft','is_not')]),['c']);assert.deepEqual(select([filter('type','br'),filter('status','done','is_not')]),['a']);assert.deepEqual(select([filter('client','client-a')]),['a','c']);assert.deepEqual(select([filter('count',0)]),['a']);assert.deepEqual(select([filter('active',false)]),['a']);assert.deepEqual(select([filter('empty',null)]),['a','b','c']);assert.deepEqual(select([filter('empty','','is_not')]),[]);assert.deepEqual(select([filter('status','draft'),filter('status','draft','is_not')]),[]);assert.deepEqual(select([]),['a','b','c']);assert.equal(cellValue({x:1}),undefined);assert.equal(cellValue('A^ORstatus=done'),'a^orstatus=done');const f=filter('status','draft');assert.equal(addCellFilter([f],{...f,id:'different'}).length,1);assert.equal(addCellFilter([f],filter('status','draft','is_not')).length,2);assert.equal(JSON.stringify(rows),before);
 console.log('Cell filter regression passed: matching/exclusion, AND stacking, reference identity, empty/zero/false, deduplication and unchanged rows.');
+
+const group=(field,closed=[])=>groupedEntries(rows,field,read,new Set(closed));
+assert.deepEqual(group(undefined).map(e=>e.row.id),['a','b','c']);
+assert.deepEqual(group('client').filter(e=>e.kind==='group').map(e=>[e.key,e.rows.length]),[['client-a',2],['client-b',1]]);
+assert.deepEqual(group('status',['draft']).filter(e=>e.kind==='row').map(e=>e.row.id),['c']);
+assert.deepEqual(group('status').filter(e=>e.kind==='row').map(e=>e.row.id),['c','a','b']);
+assert.equal(group('empty').filter(e=>e.kind==='group').length,1);
+assert.equal(group('empty')[0].rows.length,3);
+assert.deepEqual(group('active').filter(e=>e.kind==='group').map(e=>e.key),['false','true']);
+assert.deepEqual(group('count').filter(e=>e.kind==='group').map(e=>e.key),['0','1','2']);
+assert.equal(group('status',['draft','done']).filter(e=>e.kind==='row').length,0);
+assert.equal(group('status').filter(e=>e.kind==='group').reduce((n,e)=>n+e.rows.length,0),rows.length);
+assert.equal(JSON.stringify(rows),before);
+console.log('Grouping regression passed: reference identity, stable rows, empty/zero/false, collapsed groups and unchanged sources.');

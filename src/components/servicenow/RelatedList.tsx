@@ -1,6 +1,7 @@
 "use client";
 import { useCellFilters } from "./CellContextMenu";
-import { contextValue, matchesCellFilters } from "./cellFilters";
+import { GroupHeader, GroupToolbar } from "./ListGrouping";
+import { contextValue, matchesCellFilters, groupedEntries } from "./cellFilters";
 import { useSpace } from "@/features/spaces/SpaceProvider";
 import { CopyToSpace } from "@/features/spaces/CopyToSpace";
 import { canWrite, canDelete, type CopyKind } from "@/features/spaces/space.types";
@@ -93,7 +94,10 @@ export function RelatedList<T extends { id: string }>({
 
   const copyable = !!copyKind && !!space?.spaces.some(target => target.id !== space.active.id && canWrite(target.role));
   const selectable = copyable || (removable && !!onDeleteSelected);
-  const selectedIds = sortedData.filter(row => selected.has(row.id)).map(row => row.id);
+  const entries = groupedEntries(sortedData, cellFilters.groupBy?.key, getCellMatchValue, cellFilters.closedGroups);
+  const expandedRows = entries.flatMap(entry => entry.kind === "row" ? [entry.row] : []);
+  const groupKeys = entries.flatMap(entry => entry.kind === "group" ? [entry.key] : []);
+  const selectedIds = expandedRows.filter(row => selected.has(row.id)).map(row => row.id);
 
   function toggleSort(key: string) {
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
@@ -101,10 +105,10 @@ export function RelatedList<T extends { id: string }>({
   }
 
   function toggleSelectAll() {
-    if (selectedIds.length === sortedData.length && sortedData.length > 0) {
+    if (selectedIds.length === expandedRows.length && expandedRows.length > 0) {
       setSelected(new Set());
     } else {
-      setSelected(new Set(sortedData.map((r) => r.id)));
+      setSelected(new Set(expandedRows.map((r) => r.id)));
     }
   }
 
@@ -186,6 +190,7 @@ export function RelatedList<T extends { id: string }>({
       </div>
 
       {cellFilters.ui}
+      {cellFilters.groupBy && <GroupToolbar label={cellFilters.groupBy.label} count={groupKeys.length} clear={cellFilters.clearGrouping} expand={() => cellFilters.setClosedGroups(new Set())} collapse={() => cellFilters.setClosedGroups(new Set(groupKeys))} />}
 
       {/* Table */}
       {!collapsed && (
@@ -197,7 +202,7 @@ export function RelatedList<T extends { id: string }>({
                   <th className="w-8 px-4 py-3">
                     <Checkbox
                       aria-label={t("Select all visible records")}
-                      checked={selectedIds.length === sortedData.length && sortedData.length > 0}
+                      checked={selectedIds.length === expandedRows.length && expandedRows.length > 0}
                       onChange={toggleSelectAll}
                     />
                   </th>
@@ -243,7 +248,14 @@ export function RelatedList<T extends { id: string }>({
                 </tr>
               )}
               {!loading &&
-                sortedData.map((row) => (
+                entries.map(entry => {
+                if (entry.kind === "group") {
+                  const col = columns.find(c => c.key === cellFilters.groupBy?.key);
+                  const first = entry.rows[0];
+                  return <GroupHeader key={`group-${entry.key}`} colSpan={visibleCols.length + (selectable ? 1 : 0)} field={cellFilters.groupBy!.label} value={entry.key} count={entry.rows.length} closed={cellFilters.closedGroups.has(entry.key)} toggle={() => cellFilters.toggleGroup(entry.key)} rendered={col?.render?.(first)} fallback={getCellMatchValue(first, cellFilters.groupBy!.key)} />;
+                }
+                const row = entry.row;
+                return (
                   <tr
                     key={row.id}
                     data-selected={selected.has(row.id) ? "true" : undefined}
@@ -285,7 +297,7 @@ export function RelatedList<T extends { id: string }>({
                       </td>
                     ))}
                   </tr>
-                ))}
+                ); })}
             </tbody>
           </table>
         </div>

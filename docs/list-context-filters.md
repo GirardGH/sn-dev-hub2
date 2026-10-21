@@ -7,3 +7,9 @@ Les filtres contextuels se combinent par ET, avec la recherche et les filtres ex
 Les compteurs, sélections pour actions et exports suivent les résultats visibles. Le filtrage est local aux enregistrements déjà chargés ; ce n’est pas une pagination ou recherche côté serveur et les filtres ne sont pas persistés après démontage de la liste. Aucune mutation de données, de permissions ou du parseur XML.
 
 Validation : typage, lint ciblé, tests du comparateur et traductions, compilation de production. Recette navigateur sur les listes clients et la related list de 710 développements : clic droit, clavier, Show Matching, Filter Out, effacement et absence de navigation. Le type sys_decision_question conserve 50 lignes en correspondance et 660 lignes en exclusion.
+
+## Regroupement
+
+Le même menu propose « Grouper par ce champ ». Chaque groupe présente sa valeur et son effectif, avec une commande de repli/dépli. Une barre permet de déplier ou replier tous les groupes et de revenir à la liste simple. Les filtres et tris restent compatibles. Les références sont regroupées par identifiant, même lorsque les noms sont identiques.
+
+Le regroupement porte sur les données chargées et filtrées, sans persistance. Les actions de sélection multiple concernent uniquement les lignes des groupes dépliés ; un groupe replié ne déclenche aucune action cachée. Les exports conservent tous les résultats filtrés, y compris les groupes repliés.
