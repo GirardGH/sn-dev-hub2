@@ -320,7 +320,9 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
 
         {/* Raw XML source — shown for XML-imported developments */}
         {!isNew && development?.raw_xml && (
-          <FormSection title={t("Raw XML Source")} columns={1}>
+          <details className="mb-4 rounded-lg border border-sn-border">
+            <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">{t("Raw XML Source")}</summary>
+            <div className="px-4 pb-4">
             <CodeEditor
               value={development.raw_xml}
               onChange={() => {}}
@@ -328,7 +330,8 @@ export function DevelopmentFormClient({ development, client, story, clientId, st
               height="300px"
               readOnly
             />
-          </FormSection>
+            </div>
+          </details>
         )}
       </RecordForm>
 
