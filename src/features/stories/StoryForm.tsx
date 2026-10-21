@@ -1,4 +1,5 @@
 "use client";
+import { ArchiveExplorer } from "@/features/archive/ArchiveExplorer";
 import { CopyToSpace } from "@/features/spaces/CopyToSpace";
 import { useT } from "@/i18n/LanguageProvider";
 
@@ -129,6 +130,8 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
   }
 
   const devRelatedList = !isNew ? (
+    <>
+    <ArchiveExplorer records={developments} />
     <RelatedList
         copyKind="development"
       title={t("Developments")}
@@ -161,6 +164,7 @@ export function StoryFormClient({ story, developments = [], clientId, client, al
           {t("Import XML")}</Button>
       }
     />
+    </>
   ) : undefined;
 
   return (
