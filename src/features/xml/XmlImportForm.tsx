@@ -14,7 +14,6 @@ import {
   createXmlImport,
   createDevelopmentsFromXmlImport,
   checkExistingDevelopments,
-  updateXmlImportAnalysis,
 } from "./xml.actions";
 import { analyzeParsedComponents } from "./xmlAnalysis";
 import type { Client } from "@/features/clients/client.types";
@@ -44,6 +43,8 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
   const t = useT();
   const router = useRouter();
   const fileRef = useRef<HTMLInputElement>(null);
+  const pendingImport = useRef<{ selection: string; id: string } | null>(null);
+  const importInFlight = useRef(false);
 
   const [selectedClientId, setSelectedClientId] = useState(defaultClientId ?? "");
   const [selectedStoryId, setSelectedStoryId] = useState(defaultStoryId ?? "");
@@ -141,6 +142,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
   }
 
   async function handleImport() {
+    if (importInFlight.current) return;
     if (!selectedStoryId) {
       toast.error(t("Veuillez sélectionner une story."));
       return;
@@ -159,6 +161,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
       return;
     }
 
+    importInFlight.current = true;
     setImporting(true);
     try {
       const baseSummary = analyzeParsedComponents(
@@ -166,24 +169,24 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
         parseResult.errors
       ) as unknown as Record<string, unknown>;
 
-      const xmlImport = await createXmlImport({
-        filename: parseResult.filename,
-        raw_xml: parseResult.rawXml,
-        client_id: selectedClientId,
-        story_id: selectedStoryId,
-        parsed_summary: baseSummary,
-      });
-
+      // Keep the archived XML ID across retries after a lost commit response.
+      const selection = JSON.stringify({ filename: parseResult.filename, raw: parseResult.rawXml, client: selectedClientId, story: selectedStoryId, components });
+      if (pendingImport.current?.selection !== selection) {
+        const archive = await createXmlImport({
+          filename: parseResult.filename,
+          raw_xml: parseResult.rawXml,
+          client_id: selectedClientId,
+          story_id: selectedStoryId,
+          parsed_summary: baseSummary,
+        });
+        pendingImport.current = { selection, id: archive.id };
+      }
+      const xmlImport = { id: pendingImport.current.id };
       const result = await createDevelopmentsFromXmlImport({
         xmlImportId: xmlImport.id,
         storyId: selectedStoryId,
         clientId: selectedClientId,
         components,
-      });
-
-      await updateXmlImportAnalysis(xmlImport.id, {
-        ...baseSummary,
-        importResult: result,
       });
 
       const parts: string[] = [];
@@ -198,6 +201,7 @@ export function XmlImportFormClient({ clients, stories, defaultClientId, default
     } catch (err) {
       toast.error(t("Erreur lors de l'import : ") + String(err));
     } finally {
+      importInFlight.current = false;
       setImporting(false);
     }
   }

@@ -15,7 +15,8 @@
     "test:google": "node scripts/test-google-auth.cjs",
     "test:copies": "node scripts/test-bulk-space-copies.cjs",
     "test:security": "node scripts/test-security.cjs",
-    "test": "npm run test:forms && npm run test:attachments && npm run test:language && npm run test:space-scope && npm run test:spaces && npm run test:copies && npm run test:google && npm run test:security"
+    "test": "npm run test:forms && npm run test:attachments && npm run test:language && npm run test:space-scope && npm run test:spaces && npm run test:copies && npm run test:google && npm run test:security && npm run test:xml",
+    "test:xml": "node scripts/test-xml-import-db.cjs && node scripts/test-xml-import-action.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

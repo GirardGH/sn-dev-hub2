@@ -1,0 +1,13 @@
+"use client";
+import {useState} from 'react';
+import {parseServiceNowXml} from '@/features/xml/xmlParser';
+const br='<sys_script action="INSERT_OR_UPDATE"><sys_id>11111111111111111111111111111111</sys_id><name>XML fixture BR</name><collection>incident</collection><when>before</when><filter_condition>active=true</filter_condition><condition>current.active</condition><script><![CDATA[var message = "é & < >";]]></script><active>true</active></sys_script>';
+const escaped=(v:string)=>v.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fixtures=[
+ {label:'Direct Business Rule',xml:`<unload>${br}</unload>`,type:'business_rule'},
+ {label:'Update Set payload',xml:`<unload><sys_update_xml><name>sys_script_11111111111111111111111111111111</name><type>Business Rule</type><target_name>XML fixture BR</target_name><payload>${escaped(`<record_update table="sys_script">${br}</record_update>`)}</payload></sys_update_xml></unload>`,type:'business_rule'},
+ {label:'Unknown table preserved',xml:'<unload><u_custom_archive><name>Custom fixture</name><u_payload>é &amp; original</u_payload></u_custom_archive></unload>',type:'u_custom_archive'},
+ {label:'Widget template',xml:'<unload><sp_widget><name>Widget fixture</name><template><![CDATA[<b>é & original</b>]]></template><script>data.ok=true;</script><client_script>function() {}</client_script></sp_widget></unload>',type:'widget'},
+ {label:'Flow record',xml:'<unload><sys_hub_flow><sys_id>22222222222222222222222222222222</sys_id><name>Flow fixture</name><active>true</active></sys_hub_flow></unload>',type:'flow'},
+];
+export default function Check(){const[result,setResult]=useState<string>('Ready');return <main><button onClick={async()=>{try{const checks=[];for(const f of fixtures){const p=await parseServiceNowXml(f.xml,'fixture.xml');const c=p.components[0];if(p.errors.length||!c||c.developmentType!==f.type||p.rawXml!==f.xml||!c.selected)throw Error(f.label+': '+JSON.stringify(p));if(f.type==='business_rule'&&(c.config.when!=='before'||c.config.filter_condition!=='active=true'||c.config.condition!=='current.active'||c.config.script!=='var message = "é & < >";'))throw Error(f.label+': config mismatch');checks.push(f.label+': PASS');}const bad=await parseServiceNowXml('<unload><broken>','bad.xml');if(!bad.errors.length)throw Error('Malformed XML accepted');checks.push('Malformed XML rejected: PASS');setResult(checks.join('\n'));}catch(e){setResult('FAIL '+String(e));}}}>Run XML parser checks</button><pre>{result}</pre></main>}

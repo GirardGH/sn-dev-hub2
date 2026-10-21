@@ -21,7 +21,7 @@
 
 ## Chantiers encore ouverts
 
-1. Imports XML atomiques et reprenables ; validation des cibles de mise à jour, limites d’entrée/décompression et traitement des gros volumes.
+1. Imports XML : limites d’entrée/décompression et traitement des gros volumes. Atomicité, reprise dans le même formulaire et validation des cibles installées ; voir xml-import-atomic.md.
 2. Historique de migrations à versions uniques, avec réconciliation des opérations déjà exécutées sur le Supabase réel avant tout rejeu.
 3. Pagination, tri/recherche côté serveur et projections légères pour les listes.
 4. Recherche globale robuste et couvrant le code.
@@ -34,3 +34,7 @@ Aucune migration Supabase ni suppression de donnée n’a été exécutée pour 
 
 - https://nextjs.org/docs/app/guides/upgrading/version-16
 - https://tailwindcss.com/docs/upgrade-guide
+
+## Deuxième lot installé — import XML
+
+Migration additive 20261021000100 appliquée sur Supabase et correctif local activé. Import transactionnel, reprise idempotente et protection des parents ; parseur et aperçu inchangés. Vérification réelle sous rôle authenticated avec rollback de toutes les données de test. Volumes et empreintes métier avant/après identiques : 15 clients, 46 stories, 651 développements et 48 imports. Toutes les suites npm test du projet installé réussies. Détails : xml-import-atomic.md.

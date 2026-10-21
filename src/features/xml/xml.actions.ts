@@ -1,6 +1,7 @@
 "use server";
 
 import { createSpaceSupabaseClient } from "@/lib/supabaseSpace";
+import { getSpaceContext } from "@/features/spaces/space.server";
 import { revalidatePath } from "next/cache";
 import type { ParsedComponent, XmlImport } from "./xml.types";
 import type { Json } from "@/lib/database.types";
@@ -114,71 +115,22 @@ export async function createDevelopmentsFromXmlImport(params: {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
 
-  const selected = params.components.filter((c) => c.selected);
-
-  const toCreate = selected.filter(
-    (c) =>
-      !c.importAction ||
-      c.importAction === "create" ||
-      (c.importAction === "update" && !c.existingId)
-  );
-  const toUpdate = selected.filter(
-    (c) => c.importAction === "update" && !!c.existingId
-  );
-  const toSkip = selected.filter((c) => c.importAction === "skip");
-
-  // Batch insert new developments
-  if (toCreate.length > 0) {
-    const inserts = toCreate.map((c) => ({
-      user_id: user.id,
-      story_id: params.storyId,
-      client_id: params.clientId,
-      title: c.title,
-      development_type: c.developmentType,
-      target_table: c.targetTable ?? null,
-      config: c.config as unknown as Json,
-      raw_xml: c.rawXml,
-      xml_import_id: params.xmlImportId,
-      status: "draft",
-    }));
-    const { error } = await supabase.from("developments").insert(inserts);
-    if (error) throw new Error(error.message);
-  }
-
-  // Update existing developments one by one
-  for (const c of toUpdate) {
-    const { error } = await supabase
-      .from("developments")
-      .update({
-        title: c.title,
-        development_type: c.developmentType,
-        target_table: c.targetTable ?? null,
-        config: c.config as unknown as Json,
-        raw_xml: c.rawXml,
-        xml_import_id: params.xmlImportId,
-      })
-      .eq("id", c.existingId!);
-    if (error) throw new Error(error.message);
-  }
-
-  const created = toCreate.length;
-  const updated = toUpdate.length;
-  const skipped = toSkip.length;
-
-  const { error: updateError } = await supabase
-    .from("xml_imports")
-    .update({
-      created_developments_count: created + updated,
-      status: "imported",
-    })
-    .eq("id", params.xmlImportId);
-  if (updateError) throw new Error(updateError.message);
+  const { active } = await getSpaceContext();
+  const { data, error } = await supabase.rpc("commit_xml_import", {
+    p_import: params.xmlImportId,
+    p_space: active.id,
+    p_client: params.clientId,
+    p_story: params.storyId,
+    p_components: params.components as unknown as Json,
+  });
+  if (error) throw new Error(error.message);
+  const result = data as unknown as { created: number; updated: number; skipped: number };
 
   revalidatePath("/developments");
   revalidatePath("/xml-imports");
   revalidatePath(`/clients/${params.clientId}/stories/${params.storyId}`);
 
-  return { created, updated, skipped };
+  return result;
 }
 
 export async function updateXmlImportAnalysis(

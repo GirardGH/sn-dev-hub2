@@ -261,6 +261,7 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      commit_xml_import: { Args: { p_import: string; p_space: string; p_client: string; p_story: string; p_components: Json }; Returns: Json };
       create_company_space: { Args: { p_name: string; p_color?: string; p_logo_url?: string | null }; Returns: string };
       update_company_space: { Args: { p_space: string; p_name: string; p_color: string; p_logo_url?: string | null }; Returns: undefined };
       set_space_member: { Args: { p_space: string; p_email: string; p_role?: string | null }; Returns: undefined };
