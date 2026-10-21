@@ -62,7 +62,7 @@ export function RelatedList<T extends { id: string }>({
   copyKind,
 }: RelatedListProps<T>) {
   const t = useT();
-  const cellFilters = useCellFilters();
+  const cellFilters = useCellFilters(key => data.map(row => getCellMatchValue(row, key)));
   const space = useSpace();
   const writable = space ? canWrite(space.active.role) : true;
   const removable = space ? canDelete(space.active.role) : true;

@@ -6,7 +6,7 @@ import { addCellFilter, cellValue, type CellFilter } from "./cellFilters";
 
 type Cell = Omit<CellFilter, "id" | "operator" | "value"> & { value: unknown };
 type Menu = Omit<CellFilter, "id" | "operator"> & { x: number; y: number; anchor: HTMLElement };
-export function useCellFilters() {
+export function useCellFilters(groupValues: (key: string) => unknown[]) {
   const [filters, setFilters] = useState<CellFilter[]>([]);
   const [groupBy, setGroupBy] = useState<{key: string; label: string} | null>(null);
   const [closedGroups, setClosedGroups] = useState<Set<string>>(new Set());
@@ -30,7 +30,7 @@ export function useCellFilters() {
   }
   function group() {
     if (!menu) return;
-    setGroupBy({key: menu.key, label: menu.label}); setClosedGroups(new Set());
+    setGroupBy({key: menu.key, label: menu.label}); setClosedGroups(new Set(groupValues(menu.key).map(value => cellValue(value) ?? "")));
     setMenu(null);
     if (menu.anchor.isConnected) menu.anchor.focus({preventScroll: true});
   }
@@ -77,7 +77,7 @@ function ValueMenu({ menu, close, choose, group, ungroup, grouped }: { menu: Men
     <button type="button" role="menuitem" onClick={() => choose("is")} className="block w-full px-3 py-2 text-left text-sm text-sn-text hover:bg-sn-accent-light focus:bg-sn-accent-light focus:outline-none">{t("Show Matching")}</button>
     <button type="button" role="menuitem" onClick={() => choose("is_not")} className="block w-full px-3 py-2 text-left text-sm text-sn-text hover:bg-sn-accent-light focus:bg-sn-accent-light focus:outline-none">{t("Filter Out")}</button>
     <div className="my-1 border-t border-sn-border" />
-    <button type="button" role="menuitem" onClick={group} className="block w-full px-3 py-2 text-left text-sm text-sn-text hover:bg-sn-accent-light focus:bg-sn-accent-light focus:outline-none">{t("Group by this field")}</button>
+    <button type="button" role="menuitem" onClick={group} className="block w-full px-3 py-2 text-left text-sm text-sn-text hover:bg-sn-accent-light focus:bg-sn-accent-light focus:outline-none">{t("Group by")}</button>
     {grouped && <button type="button" role="menuitem" onClick={() => { ungroup(); close(); if (menu.anchor.isConnected) menu.anchor.focus({preventScroll: true}); }} className="block w-full px-3 py-2 text-left text-sm text-sn-text hover:bg-sn-accent-light focus:bg-sn-accent-light focus:outline-none">{t("Remove grouping")}</button>}
   </div>, document.body);
 }

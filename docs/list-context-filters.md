@@ -10,6 +10,6 @@ Validation : typage, lint ciblé, tests du comparateur et traductions, compilati
 
 ## Regroupement
 
-Le même menu propose « Grouper par ce champ ». Chaque groupe présente sa valeur et son effectif, avec une commande de repli/dépli. Une barre permet de déplier ou replier tous les groupes et de revenir à la liste simple. Les filtres et tris restent compatibles. Les références sont regroupées par identifiant, même lorsque les noms sont identiques.
+Le même menu propose « Grouper par ». Les groupes sont repliés à la création du regroupement. Chaque groupe présente sa valeur et son effectif, avec une commande de repli/dépli. Une barre permet de déplier ou replier tous les groupes et de revenir à la liste simple. Les filtres et tris restent compatibles. Les références sont regroupées par identifiant, même lorsque les noms sont identiques.
 
 Le regroupement porte sur les données chargées et filtrées, sans persistance. Les actions de sélection multiple concernent uniquement les lignes des groupes dépliés ; un groupe replié ne déclenche aucune action cachée. Les exports conservent tous les résultats filtrés, y compris les groupes repliés.

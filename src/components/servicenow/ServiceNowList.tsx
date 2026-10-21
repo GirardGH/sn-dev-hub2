@@ -74,7 +74,7 @@ export function ServiceNowList<T extends { id: string }>({
   className,
 }: ServiceNowListProps<T>) {
   const t = useT();
-  const cellFilters = useCellFilters();
+  const cellFilters = useCellFilters(key => data.map(row => getCellMatchValue(row, key)));
   const space = useSpace();
   const writable = space ? canWrite(space.active.role) : true;
   const removable = space ? canDelete(space.active.role) : true;
