@@ -1,4 +1,6 @@
 "use client";
+import { useCellFilters } from "./CellContextMenu";
+import { contextValue, matchesCellFilters } from "./cellFilters";
 import { useSpace } from "@/features/spaces/SpaceProvider";
 import { CopyToSpace } from "@/features/spaces/CopyToSpace";
 import { canWrite, canDelete, type CopyKind } from "@/features/spaces/space.types";
@@ -26,6 +28,7 @@ export interface RelatedColumn<T> {
   label: string;
   visible?: boolean;
   render?: (row: T) => React.ReactNode;
+  getValue?: (row: T) => unknown;
 }
 
 interface RelatedListProps<T extends { id: string }> {
@@ -58,6 +61,7 @@ export function RelatedList<T extends { id: string }>({
   copyKind,
 }: RelatedListProps<T>) {
   const t = useT();
+  const cellFilters = useCellFilters();
   const space = useSpace();
   const writable = space ? canWrite(space.active.role) : true;
   const removable = space ? canDelete(space.active.role) : true;
@@ -70,14 +74,22 @@ export function RelatedList<T extends { id: string }>({
 
   const visibleCols = useMemo(() => columns.filter((c) => c.visible !== false), [columns]);
 
+  function getCellMatchValue(row: T, key: string) {
+    const col = columns.find(c => c.key === key);
+    return contextValue(row, key, col?.getValue ? col.getValue(row) : (row as Record<string, unknown>)[key]);
+  }
   const sortedData = useMemo(() => {
-    if (!sortKey) return data;
-    return [...data].sort((a, b) => {
+    const matching = data.filter(row => matchesCellFilters(row, cellFilters.filters, (row, key) => {
+      const col = columns.find(c => c.key === key);
+      return contextValue(row, key, col?.getValue ? col.getValue(row) : (row as Record<string, unknown>)[key]);
+    }));
+    if (!sortKey) return matching;
+    return [...matching].sort((a, b) => {
       const av = String((a as Record<string, unknown>)[sortKey] ?? "");
       const bv = String((b as Record<string, unknown>)[sortKey] ?? "");
       return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
     });
-  }, [data, sortKey, sortDir]);
+  }, [data, sortKey, sortDir, cellFilters.filters, columns]);
 
   const copyable = !!copyKind && !!space?.spaces.some(target => target.id !== space.active.id && canWrite(target.role));
   const selectable = copyable || (removable && !!onDeleteSelected);
@@ -127,7 +139,7 @@ export function RelatedList<T extends { id: string }>({
           />
           <span className="text-[13px] font-semibold text-sn-text">{title}</span>
           <span className="text-[11px] text-sn-text-muted bg-white rounded-md px-1.5 py-0.5">
-            {data.length}
+            {sortedData.length}{sortedData.length !== data.length && ` / ${data.length}`}
           </span>
           {selectedIds.length > 0 && (
             <span className="text-[11px] text-sn-accent bg-sn-accent-light rounded-md px-1.5 py-0.5">
@@ -172,6 +184,8 @@ export function RelatedList<T extends { id: string }>({
           )}
         </div>
       </div>
+
+      {cellFilters.ui}
 
       {/* Table */}
       {!collapsed && (
@@ -261,10 +275,13 @@ export function RelatedList<T extends { id: string }>({
                       </td>
                     )}
                     {visibleCols.map((col) => (
-                      <td key={col.key} className="px-4 py-3 text-sn-text">
+                      <td key={col.key} className="px-4 py-3 text-sn-text" tabIndex={0} aria-haspopup="menu"
+                        onContextMenu={event => cellFilters.open(event, { key: col.key, label: col.label, value: getCellMatchValue(row, col.key), display: event.currentTarget.textContent?.trim() ?? "" })}
+                        onKeyDown={event => { if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) cellFilters.open(event, { key: col.key, label: col.label, value: getCellMatchValue(row, col.key), display: event.currentTarget.textContent?.trim() ?? "" }); }}
+                      >
                         {col.render
                           ? col.render(row)
-                          : String((row as Record<string, unknown>)[col.key] ?? "—")}
+                          : String((col.getValue ? col.getValue(row) : (row as Record<string, unknown>)[col.key]) ?? "—")}
                       </td>
                     ))}
                   </tr>

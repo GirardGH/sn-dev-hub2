@@ -15,9 +15,10 @@
     "test:google": "node scripts/test-google-auth.cjs",
     "test:copies": "node scripts/test-bulk-space-copies.cjs",
     "test:security": "node scripts/test-security.cjs",
-    "test": "npm run test:forms && npm run test:attachments && npm run test:language && npm run test:space-scope && npm run test:spaces && npm run test:copies && npm run test:google && npm run test:security && npm run test:xml && npm run test:archive",
+    "test": "npm run test:forms && npm run test:attachments && npm run test:language && npm run test:space-scope && npm run test:spaces && npm run test:copies && npm run test:google && npm run test:security && npm run test:xml && npm run test:archive && npm run test:cell-filters",
     "test:xml": "node scripts/test-xml-import-db.cjs && node scripts/test-xml-import-action.cjs",
-    "test:archive": "node scripts/test-archive.cjs"
+    "test:archive": "node scripts/test-archive.cjs",
+    "test:cell-filters": "node scripts/test-cell-filters.cjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",

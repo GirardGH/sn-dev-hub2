@@ -1,4 +1,6 @@
 "use client";
+import { useCellFilters } from "./CellContextMenu";
+import { contextValue, matchesCellFilters } from "./cellFilters";
 import { useSpace } from "@/features/spaces/SpaceProvider";
 import { CopyToSpace } from "@/features/spaces/CopyToSpace";
 import { canWrite, canDelete, type CopyKind } from "@/features/spaces/space.types";
@@ -71,6 +73,7 @@ export function ServiceNowList<T extends { id: string }>({
   className,
 }: ServiceNowListProps<T>) {
   const t = useT();
+  const cellFilters = useCellFilters();
   const space = useSpace();
   const writable = space ? canWrite(space.active.role) : true;
   const removable = space ? canDelete(space.active.role) : true;
@@ -104,6 +107,11 @@ export function ServiceNowList<T extends { id: string }>({
     return field.getValue ? field.getValue(row) : getColumnValue(row, field.key);
   }, [getColumnValue]);
 
+  const getCellMatchValue = useCallback((row: T, key: string) => {
+    const field = filterFields.find(f => f.key === key);
+    return contextValue(row, key, field ? getFilterValue(row, field) : getColumnValue(row, key));
+  }, [filterFields, getFilterValue, getColumnValue]);
+
   const applyFilter = useCallback(
     (row: T, conditions: FilterCondition[]): boolean => {
       const matchesCondition = (cond: FilterCondition): boolean => {
@@ -132,7 +140,7 @@ export function ServiceNowList<T extends { id: string }>({
   );
 
   const filteredData = useMemo(() => {
-    let result = data;
+    let result = data.filter(row => matchesCellFilters(row, cellFilters.filters, getCellMatchValue));
     if (search.trim()) {
       const q = search.toLowerCase();
       result = result.filter((row) =>
@@ -151,7 +159,7 @@ export function ServiceNowList<T extends { id: string }>({
       });
     }
     return result;
-  }, [data, search, activeFilters, sortKey, sortDir, applyFilter, visibleColumns, filterFields, getColumnValue, getFilterValue]);
+  }, [data, cellFilters.filters, getCellMatchValue, search, activeFilters, sortKey, sortDir, applyFilter, visibleColumns, filterFields, getColumnValue, getFilterValue]);
 
   const copyable = !!copyKind && !!space?.spaces.some(target => target.id !== space.active.id && canWrite(target.role));
   const selectable = copyable || (removable && !!onDeleteSelected);
@@ -295,6 +303,8 @@ export function ServiceNowList<T extends { id: string }>({
         </div>
       </div>
 
+      {cellFilters.ui}
+
       {/* Table */}
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full min-w-[640px] text-[13px]">
@@ -387,7 +397,10 @@ export function ServiceNowList<T extends { id: string }>({
                     </div>
                   </td>}
                   {visibleColumns.map((col) => (
-                    <td key={col.key} className="px-4 py-3 text-sn-text">
+                    <td key={col.key} className="px-4 py-3 text-sn-text" tabIndex={0} aria-haspopup="menu"
+                      onContextMenu={event => cellFilters.open(event, { key: col.key, label: col.label, value: getCellMatchValue(row, col.key), display: event.currentTarget.textContent?.trim() ?? "" })}
+                      onKeyDown={event => { if (event.key === "ContextMenu" || (event.shiftKey && event.key === "F10")) cellFilters.open(event, { key: col.key, label: col.label, value: getCellMatchValue(row, col.key), display: event.currentTarget.textContent?.trim() ?? "" }); }}
+                    >
                       {col.render
                         ? col.render(row)
                         : String(getColumnValue(row, col.key) ?? "—")}

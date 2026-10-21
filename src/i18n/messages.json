@@ -2311,7 +2311,15 @@
     "Your ServiceNow development library": "Votre bibliothèque de développements ServiceNow",
     "Clients, stories and developments. One place.": "Clients, stories et développements. Au même endroit.",
     "Show password": "Afficher le mot de passe",
-    "Hide password": "Masquer le mot de passe"
+    "Hide password": "Masquer le mot de passe",
+    "Show Matching": "Afficher les correspondances",
+    "Filter Out": "Exclure cette valeur",
+    "Cell filters": "Filtres de cellule",
+    "Clear cell filters": "Effacer les filtres de cellule",
+    "Remove filter": "Retirer le filtre",
+    "Empty value": "Valeur vide",
+    "Value actions": "Actions sur la valeur",
+    "Filters apply to loaded records.": "Filtres appliqués aux enregistrements chargés."
   },
   "en": {
     "Settings": "Settings",
@@ -4625,6 +4633,14 @@
     "Your ServiceNow development library": "Your ServiceNow development library",
     "Clients, stories and developments. One place.": "Clients, stories and developments. One place.",
     "Show password": "Show password",
-    "Hide password": "Hide password"
+    "Hide password": "Hide password",
+    "Show Matching": "Show Matching",
+    "Filter Out": "Filter Out",
+    "Cell filters": "Cell filters",
+    "Clear cell filters": "Clear cell filters",
+    "Remove filter": "Remove filter",
+    "Empty value": "Empty value",
+    "Value actions": "Value actions",
+    "Filters apply to loaded records.": "Filters apply to loaded records."
   }
 }
