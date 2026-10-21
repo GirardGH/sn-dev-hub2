@@ -10,13 +10,9 @@ interface Props {
 export default async function ClientPage({ params }: Props) {
   const { clientId } = await params;
 
-  try {
     const [client, stories] = await Promise.all([
       getClient(clientId),
       getStoriesByClient(clientId),
-    ]);
+    ]).catch(() => notFound());
     return <ClientFormClient client={client} stories={stories} />;
-  } catch {
-    notFound();
-  }
 }

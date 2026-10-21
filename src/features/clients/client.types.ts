@@ -20,12 +20,12 @@ export interface Client {
 }
 
 export const clientSchema = z.object({
-  name: z.string().min(1, "Le nom est requis"),
-  code: z.string().nullable().optional(),
-  description: z.string().nullable().optional(),
+  name: z.string().trim().max(500).min(1, "Le nom est requis"),
+  code: z.string().max(1_000_000).nullable().optional(),
+  description: z.string().max(1_000_000).nullable().optional(),
   instance_url: z.string().url("URL invalide").nullable().optional().or(z.literal("")),
-  environment: z.string().nullable().optional(),
-  status: z.string(),
+  environment: z.string().max(1_000_000).nullable().optional(),
+  status: z.string().min(1).max(64),
 });
 
 export type ClientFormValues = z.infer<typeof clientSchema>;

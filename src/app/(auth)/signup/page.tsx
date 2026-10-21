@@ -72,7 +72,7 @@ export default function SignupPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-sn-border rounded shadow-sm p-6">
+        <div className="bg-white border border-sn-border rounded-sm shadow-xs p-6">
           <h2 className="text-base font-semibold text-sn-text mb-4">{t("Create an account")}</h2>
           <GoogleSignIn />
 

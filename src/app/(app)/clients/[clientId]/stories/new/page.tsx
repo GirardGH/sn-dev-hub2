@@ -8,10 +8,6 @@ interface Props {
 
 export default async function NewStoryPage({ params }: Props) {
   const { clientId } = await params;
-  try {
-    const client = await getClient(clientId);
+    const client = await getClient(clientId).catch(() => notFound());
     return <StoryFormClient client={client} />;
-  } catch {
-    notFound();
-  }
 }

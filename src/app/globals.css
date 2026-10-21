@@ -1,8 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300;400;500;600;700&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 @layer base {
   body {
@@ -58,7 +57,7 @@
 
 @layer components {
   .workspace-header-icon { @apply items-center justify-center w-8 h-8 rounded-lg text-white/65 hover:text-white hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#a3db7b]; }
-  .workspace-menu-item { @apply flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer outline-none data-[highlighted]:bg-sn-accent-light; }
+  .workspace-menu-item { @apply flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer outline-hidden data-[highlighted]:bg-sn-accent-light; }
   .workspace-card { @apply rounded-xl border border-sn-border bg-white shadow-[0_2px_6px_rgba(16,44,62,0.025)]; }
   .workspace-page-title { @apply text-2xl font-semibold tracking-tight text-sn-text; }
   .workspace-list-page, .workspace-record { height: calc(100dvh - 6rem); }

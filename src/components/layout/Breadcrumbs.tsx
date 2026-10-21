@@ -25,18 +25,18 @@ export function Breadcrumbs({ items, className }: BreadcrumbsProps) {
       <Link
         href="/dashboard"
         aria-label={t("Accueil")}
-        className="flex items-center p-1 hover:text-sn-accent transition-colors rounded-sm"
+        className="flex items-center p-1 hover:text-sn-accent transition-colors rounded-xs"
       >
         <Home className="w-3.5 h-3.5" />
       </Link>
 
       {items.map((item, index) => (
         <span key={index} className="flex items-center gap-0.5">
-          <ChevronRight className="w-3 h-3 text-sn-border-dark flex-shrink-0" />
+          <ChevronRight className="w-3 h-3 text-sn-border-dark shrink-0" />
           {item.href ? (
             <Link
               href={item.href}
-              className="hover:text-sn-accent transition-colors px-1 py-0.5 rounded-sm hover:underline"
+              className="hover:text-sn-accent transition-colors px-1 py-0.5 rounded-xs hover:underline"
             >
               {item.label}
             </Link>

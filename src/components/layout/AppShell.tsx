@@ -18,11 +18,11 @@ export function AppShell({ children, userEmail }: { children: React.ReactNode; u
     });
   }
   return <div className="workspace-shell min-h-screen bg-sn-bg" style={{ "--sidebar-width": collapsed ? "76px" : "240px" } as CSSProperties}>
-    <a href="#workspace-main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded focus:bg-white focus:px-4 focus:py-2">{t("Aller au contenu")}</a>
+    <a href="#workspace-main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-sm focus:bg-white focus:px-4 focus:py-2">{t("Aller au contenu")}</a>
     <Header userEmail={userEmail} collapsed={collapsed} onToggleSidebar={toggleSidebar} mobileOpen={mobileOpen} onOpenMobile={() => setMobileOpen(true)} />
     <Sidebar collapsed={collapsed} mobileOpen={mobileOpen} onCloseMobile={closeMobile} />
     <NavigationFeedback />
-    <main id="workspace-main" tabIndex={-1} className="workspace-main min-w-0 pt-16 min-h-screen outline-none">
+    <main id="workspace-main" tabIndex={-1} className="workspace-main min-w-0 pt-16 min-h-screen outline-hidden">
       <div className="workspace-content p-4 lg:p-6 xl:p-8">{children}</div>
     </main>
   </div>;

@@ -22,6 +22,7 @@ import { Checkbox } from "@/components/ui/Checkbox";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { FilterBuilder, type FilterCondition, type FilterField } from "./FilterBuilder";
 import { ColumnConfigurator, type ColumnDef } from "./ColumnConfigurator";
+import { csvCell } from "@/lib/csv";
 import { cn } from "@/lib/utils";
 
 export interface ListColumn<T> extends ColumnDef {
@@ -182,12 +183,12 @@ export function ServiceNowList<T extends { id: string }>({
   }
 
   function exportCsv() {
-    const headers = visibleColumns.map((c) => c.label).join(",");
+    const headers = visibleColumns.map((c) => csvCell(t(c.label))).join(",");
     const rows = filteredData.map((row) =>
       visibleColumns
         .map((col) => {
           const val = col.getValue ? col.getValue(row) : (row as Record<string, unknown>)[col.key];
-          return `"${String(val ?? "").replace(/"/g, '""')}"`;
+          return csvCell(val);
         })
         .join(",")
     );
@@ -204,7 +205,7 @@ export function ServiceNowList<T extends { id: string }>({
   return (
     <div className={cn("workspace-card overflow-hidden flex flex-col min-h-0", className)}>
       {/* Header bar */}
-      <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-3 border-b border-sn-border bg-white flex-shrink-0">
+      <div className="flex items-center justify-between flex-wrap gap-3 px-4 py-3 border-b border-sn-border bg-white shrink-0">
         <div className="flex items-center gap-2">
           <span className="text-[13px] font-semibold text-sn-text">{title}</span>
           <span className="text-[11px] text-sn-text-muted bg-white border border-sn-border rounded-md px-1.5 py-0.5 font-medium">
@@ -223,7 +224,7 @@ export function ServiceNowList<T extends { id: string }>({
               onChange={(e) => setSearch(e.target.value)}
               aria-label={t("Rechercher dans la liste")}
               placeholder={t("Rechercher dans la liste…")}
-              className="h-8 pl-7 pr-2.5 text-xs bg-white border border-sn-border rounded-md outline-none focus:border-sn-accent focus:ring-1 focus:ring-sn-accent/30 w-48 sm:w-56 placeholder:text-sn-border-dark"
+              className="h-8 pl-7 pr-2.5 text-xs bg-white border border-sn-border rounded-md outline-hidden focus:border-sn-accent focus:ring-1 focus:ring-sn-accent/30 w-48 sm:w-56 placeholder:text-sn-border-dark"
             />
           </div>
 
@@ -260,7 +261,7 @@ export function ServiceNowList<T extends { id: string }>({
               icon={<Trash2 className="w-3.5 h-3.5" />}
               onClick={() => setConfirmBulkDelete(true)}
               loading={deleting}
-              className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 shadow-sm"
+              className="bg-red-50 text-red-600 border border-red-200 hover:bg-red-100 shadow-xs"
             >
               {t("Supprimer (")}{selectedIds.length})
             </Button>

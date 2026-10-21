@@ -159,7 +159,7 @@ function FlowDebugPanel({ debug }: { debug: FlowDebugInfo }) {
               {debug.tables_found.map((t) => (
                 <span
                   key={t}
-                  className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded font-mono font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100"
+                  className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-sm font-mono font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100"
                 >
                   {t}
                   <span className="text-indigo-400 font-normal">

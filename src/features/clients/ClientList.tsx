@@ -32,7 +32,7 @@ const filterFields: FilterField[] = [
 const defaultColumns: ListColumn<Client>[] = [
   { key: "name", label: "Name", visible: true, order: 1, render: (row) => (
     <span className="flex items-center gap-2">
-      <Building2 className="w-3.5 h-3.5 text-sn-accent flex-shrink-0" />
+      <Building2 className="w-3.5 h-3.5 text-sn-accent shrink-0" />
       <span className="font-medium text-sn-accent">{row.name}</span>
     </span>
   )},
@@ -59,7 +59,7 @@ export function ClientListClient({ clients }: Props) {
 
   return (
     <div className="workspace-list-page min-h-0 flex flex-col">
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <div>
           <h1 className="workspace-page-title">{t("Clients")}</h1>
           <p className="text-xs text-sn-text-muted mt-0.5">

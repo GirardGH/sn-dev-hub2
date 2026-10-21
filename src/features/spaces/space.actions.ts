@@ -14,7 +14,7 @@ export async function switchSpace(id: string) {
   uuid.parse(id);
   const context = await getSpaceContext();
   if (!context.spaces.some(space => space.id === id)) throw new Error('Space not accessible');
-  cookies().set(SPACE_COOKIE, id, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 31536000 });
+  (await cookies()).set(SPACE_COOKIE, id, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 31536000 });
   revalidatePath('/', 'layout');
 }
 export async function createCompany(values: { name: string; color: string; logoUrl?: string }) {

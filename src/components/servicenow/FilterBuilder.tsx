@@ -80,7 +80,7 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
       </Button>
 
       {open && (
-        <div className="absolute top-9 right-0 z-20 bg-white border border-sn-border rounded-sm shadow-lg w-[640px] max-w-[calc(100vw-1rem)] overflow-hidden">
+        <div className="absolute top-9 right-0 z-20 bg-white border border-sn-border rounded-xs shadow-lg w-[640px] max-w-[calc(100vw-1rem)] overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2 bg-sn-table-header border-b border-sn-border">
             <span className="text-[11px] font-semibold text-sn-text-muted uppercase tracking-widest">
               {t("Filters")}</span>
@@ -105,7 +105,7 @@ export function FilterBuilder({ fields, conditions, onChange, onApply, onClear }
               return (
                 <div key={cond.id} className="flex items-center gap-2">
                   {idx === 0 ? (
-                    <span className="text-[11px] font-semibold text-sn-text-muted w-10 text-right flex-shrink-0 uppercase tracking-wide">
+                    <span className="text-[11px] font-semibold text-sn-text-muted w-10 text-right shrink-0 uppercase tracking-wide">
                       {t("Where")}</span>
                   ) : (
                     <Select

@@ -11,18 +11,14 @@ interface Props {
 
 export default async function NewDevelopmentPage({ params }: Props) {
   const { clientId, storyId } = await params;
-  try {
     const [client, story] = await Promise.all([
       getClient(clientId),
       getStory(storyId),
-    ]);
+    ]).catch(() => notFound());
     return (
       <DevelopmentFormClient
         client={client as Client}
         story={story as Story}
       />
     );
-  } catch {
-    notFound();
-  }
 }

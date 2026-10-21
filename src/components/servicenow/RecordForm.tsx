@@ -63,7 +63,7 @@ export function RecordForm({
 
   return (
     <div className={cn(wide ? "max-w-none" : "max-w-6xl", "workspace-record min-h-0 flex flex-col")}>
-      <div className="pt-1 pb-0 bg-sn-bg flex-shrink-0">
+      <div className="pt-1 pb-0 bg-sn-bg shrink-0">
       {/* Breadcrumbs */}
       {breadcrumbs.length > 0 && (
         <div className="pb-3">
@@ -72,7 +72,7 @@ export function RecordForm({
       )}
 
       {/* Record panel */}
-      <div className="bg-white border border-sn-border rounded-t-xl shadow-sm overflow-hidden">
+      <div className="bg-white border border-sn-border rounded-t-xl shadow-xs overflow-hidden">
         {/* Record header bar — dark like SN */}
         <div className="flex items-center justify-between px-4 sm:px-5 py-4 bg-white border-b border-sn-border gap-3 flex-wrap">
           <div className="flex items-center gap-3">
@@ -127,7 +127,7 @@ export function RecordForm({
 
       <div className="min-h-0 flex-1 overflow-y-auto pb-4">
       {/* Record panel */}
-      <div className="bg-white border border-sn-border border-t-0 rounded-b-xl shadow-sm mb-4 overflow-hidden">
+      <div className="bg-white border border-sn-border border-t-0 rounded-b-xl shadow-xs mb-4 overflow-hidden">
 
         {attachmentStrip}
         {/* Form body */}

@@ -1,6 +1,7 @@
 "use server";
 
 import { createSpaceSupabaseClient } from "@/lib/supabaseSpace";
+import { clientSchema } from "./client.types";
 import { revalidatePath } from "next/cache";
 import type { ClientFormValues, Client } from "./client.types";
 
@@ -26,6 +27,7 @@ export async function getClient(id: string): Promise<Client> {
 }
 
 export async function createClient(values: ClientFormValues): Promise<Client> {
+  values = clientSchema.parse(values);
   const supabase = await createSpaceSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
@@ -49,6 +51,7 @@ export async function createClient(values: ClientFormValues): Promise<Client> {
 }
 
 export async function updateClient(id: string, values: ClientFormValues): Promise<Client> {
+  values = clientSchema.parse(values);
   const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("clients")

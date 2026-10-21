@@ -52,7 +52,7 @@ export function XmlImportPreview({
   const allSelected = components.every((c) => c.selected);
 
   return (
-    <div className="border border-sn-border rounded overflow-hidden">
+    <div className="border border-sn-border rounded-sm overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-2.5 bg-gray-50 border-b border-sn-border">
         <div className="flex items-center gap-2">
@@ -138,7 +138,7 @@ export function XmlImportPreview({
                         type="text"
                         value={comp.title}
                         onChange={(e) => updateTitle(index, e.target.value)}
-                        className="w-full text-sm border-0 border-b border-transparent hover:border-sn-border focus:border-sn-accent outline-none bg-transparent py-0.5"
+                        className="w-full text-sm border-0 border-b border-transparent hover:border-sn-border focus:border-sn-accent outline-hidden bg-transparent py-0.5"
                         placeholder={t("Component name...")}
                       />
                     </td>
@@ -146,7 +146,7 @@ export function XmlImportPreview({
                       <select
                         value={comp.developmentType}
                         onChange={(e) => updateType(index, e.target.value)}
-                        className="text-xs border border-sn-border rounded px-1.5 py-1 bg-white outline-none focus:border-sn-accent"
+                        className="text-xs border border-sn-border rounded-sm px-1.5 py-1 bg-white outline-hidden focus:border-sn-accent"
                       >
                         {!KNOWN_DEV_TYPE_VALUES.has(comp.developmentType) && (
                           <option value={comp.developmentType}>
@@ -166,7 +166,7 @@ export function XmlImportPreview({
                       <div className="flex items-center gap-1.5">
                         {hasDuplicateInfo && (
                           <span
-                            className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold border flex-shrink-0 ${
+                            className={`inline-flex items-center px-1.5 py-0.5 rounded-sm text-[10px] font-semibold border shrink-0 ${
                               isExisting
                                 ? "bg-amber-50 text-amber-700 border-amber-200"
                                 : "bg-green-50 text-green-700 border-green-200"
@@ -180,7 +180,7 @@ export function XmlImportPreview({
                           onChange={(e) =>
                             updateAction(index, e.target.value as "create" | "update" | "skip")
                           }
-                          className="text-xs border border-sn-border rounded px-1.5 py-1 bg-white outline-none focus:border-sn-accent"
+                          className="text-xs border border-sn-border rounded-sm px-1.5 py-1 bg-white outline-hidden focus:border-sn-accent"
                         >
                           <option value="create">{t("Créer")}</option>
                           <option value="update">{t("Mettre à jour")}</option>
@@ -191,7 +191,7 @@ export function XmlImportPreview({
                             href={`/clients/${clientId}/stories/${storyId}/developments/${comp.existingId}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sn-accent hover:opacity-70 flex-shrink-0"
+                            className="text-sn-accent hover:opacity-70 shrink-0"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -200,7 +200,7 @@ export function XmlImportPreview({
                       </div>
                     </td>
                     <td className="px-3 py-2">
-                      <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded text-sn-text-muted">
+                      <code className="text-xs bg-gray-100 px-1.5 py-0.5 rounded-sm text-sn-text-muted">
                         {comp.xmlTag}
                       </code>
                     </td>

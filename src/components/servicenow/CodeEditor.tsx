@@ -36,7 +36,7 @@ export function CodeEditor({
         <span className="text-xs font-medium text-sn-text-muted">{label ? t(label) : label}</span>
       )}
       <div
-        className="rounded overflow-hidden border border-sn-border"
+        className="rounded-sm overflow-hidden border border-sn-border"
         style={{ height }}
       >
         <MonacoEditor

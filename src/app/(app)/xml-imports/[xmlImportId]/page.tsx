@@ -8,18 +8,14 @@ interface Props {
 
 export default async function XmlImportPage({ params }: Props) {
   const { xmlImportId } = await params;
-  try {
     const [xmlImport, linkedDevelopments] = await Promise.all([
       getXmlImport(xmlImportId),
       getDevelopmentsByXmlImport(xmlImportId),
-    ]);
+    ]).catch(() => notFound());
     return (
       <XmlImportDetailClient
         xmlImport={xmlImport}
         linkedDevelopments={linkedDevelopments}
       />
     );
-  } catch {
-    notFound();
-  }
 }

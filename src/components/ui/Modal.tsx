@@ -39,7 +39,7 @@ export function Modal({ open, onClose, title, children, size = "md", footer }: M
         aria-modal="true"
         aria-label={title ? t(title) : undefined}
         className={cn(
-          "bg-white rounded shadow-xl flex flex-col max-h-[90vh]",
+          "bg-white rounded-sm shadow-xl flex flex-col max-h-[90vh]",
           {
             "w-full max-w-sm": size === "sm",
             "w-full max-w-md": size === "md",
@@ -49,12 +49,12 @@ export function Modal({ open, onClose, title, children, size = "md", footer }: M
         )}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-sn-border flex-shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-sn-border shrink-0">
           {title && <h2 className="text-sm font-semibold text-sn-text">{title ? t(title) : title}</h2>}
           <button
             aria-label={t("Close")}
             onClick={onClose}
-            className="ml-auto w-7 h-7 flex items-center justify-center rounded hover:bg-gray-100 text-sn-text-muted hover:text-sn-text transition-colors"
+            className="ml-auto w-7 h-7 flex items-center justify-center rounded-sm hover:bg-gray-100 text-sn-text-muted hover:text-sn-text transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -65,7 +65,7 @@ export function Modal({ open, onClose, title, children, size = "md", footer }: M
 
         {/* Footer */}
         {footer && (
-          <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-sn-border flex-shrink-0">
+          <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-sn-border shrink-0">
             {footer}
           </div>
         )}

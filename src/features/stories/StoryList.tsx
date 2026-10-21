@@ -41,7 +41,7 @@ function buildColumns(onClientClick?: (clientId: string) => void): ListColumn<St
     { key: "reference", label: "Reference", visible: true, order: 1 },
     { key: "title", label: "Title", visible: true, order: 2, render: (row) => (
       <span className="flex items-center gap-2">
-        <BookOpen className="w-3.5 h-3.5 text-sn-accent flex-shrink-0" />
+        <BookOpen className="w-3.5 h-3.5 text-sn-accent shrink-0" />
         <span className="font-medium text-sn-accent">{row.title}</span>
       </span>
     )},
@@ -93,7 +93,7 @@ export function StoryListClient({ stories }: Props) {
 
   return (
     <div className="workspace-list-page min-h-0 flex flex-col">
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <div>
           <h1 className="workspace-page-title">{t("Stories")}</h1>
           <p className="text-xs text-sn-text-muted mt-0.5">{t("All stories across all clients")}</p>

@@ -1,6 +1,7 @@
 "use server";
 
 import { createSpaceSupabaseClient } from "@/lib/supabaseSpace";
+import { developmentSchema } from "./development.types";
 import { revalidatePath } from "next/cache";
 import type { DevelopmentFormValues, Development } from "./development.types";
 import type { Json } from "@/lib/database.types";
@@ -49,6 +50,7 @@ export async function getDevelopment(id: string): Promise<Development> {
 }
 
 export async function createDevelopment(values: DevelopmentFormValues): Promise<Development> {
+  values = developmentSchema.parse(values);
   const supabase = await createSpaceSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
@@ -78,6 +80,7 @@ export async function createDevelopment(values: DevelopmentFormValues): Promise<
 }
 
 export async function updateDevelopment(id: string, values: DevelopmentFormValues): Promise<Development> {
+  values = developmentSchema.parse(values);
   const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("developments")

@@ -101,7 +101,7 @@ function ComponentsTable({ components }: ComponentsTableProps) {
   };
 
   return (
-    <div className="border border-sn-border rounded overflow-hidden">
+    <div className="border border-sn-border rounded-sm overflow-hidden">
       <table className="w-full text-xs">
         <thead>
           <tr className="bg-sn-bg border-b border-sn-border">
@@ -128,9 +128,9 @@ function ComponentsTable({ components }: ComponentsTableProps) {
                     <td className="px-3 py-2 font-medium text-sn-text">
                       <span className="flex items-center gap-1.5">
                         {isExpanded ? (
-                          <ChevronDown className="w-3.5 h-3.5 text-sn-text-muted flex-shrink-0" />
+                          <ChevronDown className="w-3.5 h-3.5 text-sn-text-muted shrink-0" />
                         ) : (
-                          <ChevronRight className="w-3.5 h-3.5 text-sn-text-muted flex-shrink-0" />
+                          <ChevronRight className="w-3.5 h-3.5 text-sn-text-muted shrink-0" />
                         )}
                         {getTypeLabel(type)}
                       </span>
@@ -156,7 +156,7 @@ function ComponentsTable({ components }: ComponentsTableProps) {
                               {item.title}
                             </span>
                             {item.targetTable && (
-                              <span className="text-[10px] text-blue-600 bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded font-mono flex-shrink-0">
+                              <span className="text-[10px] text-blue-600 bg-blue-100 border border-blue-200 px-1.5 py-0.5 rounded-sm font-mono shrink-0">
                                 {item.targetTable}
                               </span>
                             )}
@@ -207,12 +207,12 @@ function DevelopmentsCreatedList({ developments }: DevListProps) {
                     )
                   }
                   data-navigation-feedback="true"
-                  className="w-full flex items-center justify-between px-3 py-2 bg-sn-bg border border-sn-border rounded hover:bg-white hover:border-sn-accent/40 transition-colors text-left group"
+                  className="w-full flex items-center justify-between px-3 py-2 bg-sn-bg border border-sn-border rounded-sm hover:bg-white hover:border-sn-accent/40 transition-colors text-left group"
                 >
                   <span className="text-sm text-sn-text truncate group-hover:text-sn-accent transition-colors">
                     {dev.title}
                   </span>
-                  <ExternalLink className="w-3.5 h-3.5 text-sn-text-muted/50 group-hover:text-sn-accent flex-shrink-0 ml-2 transition-colors" />
+                  <ExternalLink className="w-3.5 h-3.5 text-sn-text-muted/50 group-hover:text-sn-accent shrink-0 ml-2 transition-colors" />
                 </button>
               ))}
             </div>
@@ -304,10 +304,10 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
       />
 
       {/* ── Header card ── */}
-      <div className="bg-white border border-sn-border rounded shadow-sm">
+      <div className="bg-white border border-sn-border rounded-sm shadow-xs">
         <div className="flex items-center justify-between px-4 py-3 border-b border-sn-border">
           <div className="flex items-center gap-3">
-            <FileCode2 className="w-5 h-5 text-sn-accent flex-shrink-0" />
+            <FileCode2 className="w-5 h-5 text-sn-accent shrink-0" />
             <div>
               <h1 className="text-base font-semibold text-sn-text">{xmlImport.filename}</h1>
               <p className="text-xs text-sn-text-muted mt-0.5">
@@ -343,7 +343,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
                 className="text-sm text-sn-accent hover:underline flex items-center gap-1"
               >
                 {xmlImport.clients.name}
-                <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                <ExternalLink className="w-3 h-3 shrink-0" />
               </button>
             ) : (
               <p className="text-sm text-sn-text">—</p>
@@ -364,7 +364,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
                 className="text-sm text-sn-accent hover:underline flex items-center gap-1"
               >
                 {xmlImport.stories.title}
-                <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                <ExternalLink className="w-3 h-3 shrink-0" />
               </button>
             ) : (
               <p className="text-sm text-sn-text">—</p>
@@ -446,7 +446,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
                   {Object.entries(summary.byAction).map(([action, count]) => (
                     <span
                       key={action}
-                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium border ${
+                      className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-sm text-xs font-medium border ${
                         action === "DELETE"
                           ? "bg-red-50 text-red-700 border-red-200"
                           : "bg-green-50 text-green-700 border-green-200"
@@ -471,7 +471,7 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
                     .map(([table, count]) => (
                       <span
                         key={table}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded text-xs font-mono"
+                        className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-sm text-xs font-mono"
                       >
                         {table}
                         {count > 1 && (
@@ -485,8 +485,8 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
 
             {/* Warnings */}
             {summary.warnings.length > 0 && (
-              <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-sm">
+                <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs font-semibold text-yellow-800 mb-1">
                     {t("Avertissements (")}{summary.warnings.length})
@@ -574,12 +574,12 @@ export function XmlImportDetailClient({ xmlImport, linkedDevelopments }: Props) 
       >
         {truncated && (
           <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded text-xs font-medium">
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-sm text-xs font-medium">
               <AlertTriangle className="w-3 h-3" />
               {t("Aperçu —")}{totalLines.toLocaleString()} {t("lignes au total · fichier complet via “Voir complet“ ou “Télécharger“")}</span>
           </div>
         )}
-        <pre className="text-xs font-mono bg-sn-bg rounded border border-sn-border p-3 overflow-auto max-h-80 whitespace-pre">
+        <pre className="text-xs font-mono bg-sn-bg rounded-sm border border-sn-border p-3 overflow-auto max-h-80 whitespace-pre">
           {preview}
           {truncated && "\n..."}
         </pre>

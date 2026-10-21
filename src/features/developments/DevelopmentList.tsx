@@ -40,7 +40,7 @@ const filterFields: FilterField[] = [
 const defaultColumns: ListColumn<DevelopmentWithRelations>[] = [
   { key: "title", label: "Title", visible: true, order: 1, render: (row) => (
     <span className="flex items-center gap-2">
-      <Code2 className="w-3.5 h-3.5 text-sn-accent flex-shrink-0" />
+      <Code2 className="w-3.5 h-3.5 text-sn-accent shrink-0" />
       <span className="font-medium text-sn-accent">{row.title}</span>
     </span>
   )},
@@ -106,7 +106,7 @@ export function DevelopmentListClient({ developments }: Props) {
 
   return (
     <div className="workspace-list-page min-h-0 flex flex-col">
-      <div className="flex items-center justify-between mb-4 flex-shrink-0">
+      <div className="flex items-center justify-between mb-4 shrink-0">
         <div>
           <h1 className="workspace-page-title">{t("Developments")}</h1>
           <p className="text-xs text-sn-text-muted mt-0.5">{t("All ServiceNow developments")}</p>

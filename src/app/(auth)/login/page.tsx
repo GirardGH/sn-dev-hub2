@@ -104,7 +104,7 @@ function LoginForm({ onForgot }: { onForgot: () => void }) {
             </button>
           </div>
           <div className="mt-3 text-right">
-            <button type="button" onClick={onForgot} className="rounded text-xs font-medium text-sn-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-sn-accent">
+            <button type="button" onClick={onForgot} className="rounded-sm text-xs font-medium text-sn-accent hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-sn-accent">
               {t("Mot de passe oublié ?")}
             </button>
           </div>
@@ -225,7 +225,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-[420px]">
         <div className="mb-5 flex flex-col items-center text-center">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#91cf62] text-[#163c3f] shadow-sm">
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#91cf62] text-[#163c3f] shadow-xs">
               <Layers className="h-6 w-6" aria-hidden="true" />
             </span>
             <h1 className="text-[30px] font-semibold tracking-tight text-white">SN Dev <span className="text-[#b9e49a]">Hub</span></h1>

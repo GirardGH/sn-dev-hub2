@@ -141,7 +141,7 @@ export function SettingsClient({ user, profile }: Props) {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-sn-text-muted">{t("User ID")}</span>
-              <code className="text-xs bg-gray-100 px-2 py-0.5 rounded text-sn-text">
+              <code className="text-xs bg-gray-100 px-2 py-0.5 rounded-sm text-sn-text">
                 {user?.id?.slice(0, 20)}...
               </code>
             </div>

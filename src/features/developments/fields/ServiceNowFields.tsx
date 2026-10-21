@@ -53,12 +53,12 @@ export function ServiceNowFields({ table, config, onChange }: {
   const objects = Object.entries(config).filter(([key, value]) => !known.has(key) && !key.startsWith("_") && value !== null && typeof value === "object" && key !== "flow_preview");
   return <>
     <FormSection title={t("Configuration ServiceNow")}>{primary.map(field)}</FormSection>
-    <details className="border border-sn-border rounded-sm mb-4" open={primary.length === 0}>
+    <details className="border border-sn-border rounded-xs mb-4" open={primary.length === 0}>
       <summary className="cursor-pointer px-4 py-3 text-sm font-semibold">{t("Autres champs ServiceNow (")}{extra.length})</summary>
       <FormSection title={t("Options complémentaires")} className="px-4 sm:px-6 pt-2">{extra.map(field)}</FormSection>
     </details>
-    {objects.length > 0 && <details className="border border-sn-border rounded-sm mb-4"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold">{t("Configurations associées archivées")}</summary><FormSection title={t("Données associées")} columns={1} className="px-4 sm:px-6 pt-2">{objects.map(([key, value]) => <JsonField key={key} name={key} value={value} onChange={v => update(key, v)} />)}</FormSection></details>}
-    {Object.keys(legacy).length > 0 && <details className="border border-sn-border rounded-sm mb-4"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold">{t("Champs hérités ou spécifiques à l’archive")}</summary><div className="px-4 sm:px-6 pt-2 pb-4"><GenericConfigFields config={legacy} onChange={changes => onChange({ ...config, ...changes })} /></div></details>}
-    {metadata.length > 0 && <details className="border border-sn-border rounded-sm mb-4"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold">{t("Métadonnées de la source")}</summary><FormSection title={t("Source ServiceNow")} className="px-4 sm:px-6 pt-2">{metadata.map(([key, value]) => <Input key={key} id={`meta-${key}`} label={key} value={String(value ?? "")} readOnly />)}</FormSection></details>}
+    {objects.length > 0 && <details className="border border-sn-border rounded-xs mb-4"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold">{t("Configurations associées archivées")}</summary><FormSection title={t("Données associées")} columns={1} className="px-4 sm:px-6 pt-2">{objects.map(([key, value]) => <JsonField key={key} name={key} value={value} onChange={v => update(key, v)} />)}</FormSection></details>}
+    {Object.keys(legacy).length > 0 && <details className="border border-sn-border rounded-xs mb-4"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold">{t("Champs hérités ou spécifiques à l’archive")}</summary><div className="px-4 sm:px-6 pt-2 pb-4"><GenericConfigFields config={legacy} onChange={changes => onChange({ ...config, ...changes })} /></div></details>}
+    {metadata.length > 0 && <details className="border border-sn-border rounded-xs mb-4"><summary className="cursor-pointer px-4 py-3 text-sm font-semibold">{t("Métadonnées de la source")}</summary><FormSection title={t("Source ServiceNow")} className="px-4 sm:px-6 pt-2">{metadata.map(([key, value]) => <Input key={key} id={`meta-${key}`} label={key} value={String(value ?? "")} readOnly />)}</FormSection></details>}
   </>;
 }

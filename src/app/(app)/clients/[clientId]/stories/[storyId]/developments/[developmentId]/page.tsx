@@ -8,10 +8,6 @@ interface Props {
 
 export default async function DevelopmentPage({ params }: Props) {
   const { clientId, storyId, developmentId } = await params;
-  try {
-    const dev = await getDevelopment(developmentId);
+    const dev = await getDevelopment(developmentId).catch(() => notFound());
     return <DevelopmentFormClient development={dev} clientId={clientId} storyId={storyId} />;
-  } catch {
-    notFound();
-  }
 }

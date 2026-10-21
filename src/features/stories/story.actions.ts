@@ -1,6 +1,7 @@
 "use server";
 
 import { createSpaceSupabaseClient } from "@/lib/supabaseSpace";
+import { storySchema } from "./story.types";
 import { revalidatePath } from "next/cache";
 import type { StoryFormValues, Story } from "./story.types";
 
@@ -37,6 +38,7 @@ export async function getStory(id: string): Promise<Story> {
 }
 
 export async function createStory(values: StoryFormValues): Promise<Story> {
+  values = storySchema.parse(values);
   const supabase = await createSpaceSupabaseClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("Not authenticated");
@@ -64,6 +66,7 @@ export async function createStory(values: StoryFormValues): Promise<Story> {
 }
 
 export async function updateStory(id: string, values: StoryFormValues): Promise<Story> {
+  values = storySchema.parse(values);
   const supabase = await createSpaceSupabaseClient();
   const { data, error } = await supabase
     .from("stories")

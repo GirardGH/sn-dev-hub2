@@ -27,7 +27,7 @@ const filterFields: FilterField[] = [
 const defaultColumns: ListColumn<XmlImportWithRelations>[] = [
   { key: "filename", label: "Filename", visible: true, order: 1, render: (row) => (
     <span className="flex items-center gap-2">
-      <FileCode2 className="w-3.5 h-3.5 text-sn-accent flex-shrink-0" />
+      <FileCode2 className="w-3.5 h-3.5 text-sn-accent shrink-0" />
       <span className="font-medium text-sn-accent">{row.filename}</span>
     </span>
   )},

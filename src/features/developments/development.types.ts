@@ -35,17 +35,20 @@ export interface Development {
 }
 
 export const developmentSchema = z.object({
-  story_id: z.string().min(1, "La story est requise"),
-  client_id: z.string().min(1, "Le client est requis"),
-  title: z.string().min(1, "Le titre est requis"),
-  development_type: z.string().min(1, "Le type est requis"),
-  target_table: z.string().nullable().optional(),
-  application_scope: z.string().nullable().optional(),
-  update_set: z.string().nullable().optional(),
-  short_description: z.string().nullable().optional(),
-  technical_notes: z.string().nullable().optional(),
-  status: z.string(),
-  config: z.record(z.string(), z.unknown()),
+  story_id: z.string().uuid("La story est requise"),
+  client_id: z.string().uuid("Le client est requis"),
+  title: z.string().trim().max(500).min(1, "Le titre est requis"),
+  development_type: z.string().trim().min(1, "Le type est requis").max(128),
+  target_table: z.string().max(1_000_000).nullable().optional(),
+  application_scope: z.string().max(1_000_000).nullable().optional(),
+  update_set: z.string().max(1_000_000).nullable().optional(),
+  short_description: z.string().max(1_000_000).nullable().optional(),
+  technical_notes: z.string().max(1_000_000).nullable().optional(),
+  status: z.string().min(1).max(64),
+  config: z.record(z.string(), z.unknown()).refine(value => {
+    try { return new TextEncoder().encode(JSON.stringify(value)).byteLength <= 2 * 1024 * 1024; }
+    catch { return false; }
+  }, "La configuration dépasse la limite de 2 Mo ou n’est pas sérialisable."),
 });
 
 export type DevelopmentFormValues = z.infer<typeof developmentSchema>;

@@ -83,9 +83,9 @@ export function ColumnConfigurator({ columns, onChange }: ColumnConfiguratorProp
           {local.map((col, index) => (
             <div
               key={col.key}
-              className="flex items-center gap-2 p-2 rounded border border-sn-border bg-gray-50 hover:bg-white transition-colors"
+              className="flex items-center gap-2 p-2 rounded-sm border border-sn-border bg-gray-50 hover:bg-white transition-colors"
             >
-              <GripVertical className="w-3.5 h-3.5 text-sn-text-muted flex-shrink-0 cursor-grab" />
+              <GripVertical className="w-3.5 h-3.5 text-sn-text-muted shrink-0 cursor-grab" />
               <Checkbox
                 checked={col.visible}
                 onChange={() => toggleVisible(col.key)}

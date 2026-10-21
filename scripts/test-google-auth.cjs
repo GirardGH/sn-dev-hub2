@@ -16,7 +16,7 @@ response=await route.GET(request('/auth/callback?code=recovery&next=/reset-passw
 response=await route.GET(request('/auth/callback?error=access_denied'));assert.equal(response.headers.get('location'),'https://app.example/login?error=access_denied');assert.equal(calls.length,2);
 response=await route.GET(request('/auth/callback'));assert.equal(response.headers.get('location'),'https://app.example/login?error=auth_error');
 failure=true;response=await route.GET(request('/auth/callback?code=bad'));assert.equal(response.headers.get('location'),'https://app.example/login?error=auth_error');throws=true;response=await route.GET(request('/auth/callback?code=bad'));assert.equal(response.headers.get('location'),'https://app.example/login?error=auth_error');
-let user={id:'existing-user'};const middleware=load('src/middleware.ts',{'next/server':{NextResponse},'@supabase/ssr':{createServerClient:()=>({auth:{getUser:async()=>({data:{user}})}})}}).middleware;
+let user={id:'existing-user'};const middleware=load('src/proxy.ts',{'next/server':{NextResponse},'@supabase/ssr':{createServerClient:()=>({auth:{getUser:async()=>({data:{user}})}})}}).proxy;
 response=await middleware(request('/auth/callback?code=existing-account'));assert.equal(response.headers.get('location'),null);
 response=await middleware(request('/login'));assert.equal(response.headers.get('location'),'https://app.example/dashboard');
 user=null;response=await middleware(request('/auth/callback?code=new-account'));assert.equal(response.headers.get('location'),null);

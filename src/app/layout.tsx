@@ -10,8 +10,8 @@ export const metadata: Metadata = {
   description: "ServiceNow Development Manager",
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  const savedLanguage = cookies().get(LANGUAGE_COOKIE)?.value;
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const savedLanguage = (await cookies()).get(LANGUAGE_COOKIE)?.value;
   const language = isLanguage(savedLanguage) ? savedLanguage : "fr";
   return (
     <html lang={language}>

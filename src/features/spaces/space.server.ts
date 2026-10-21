@@ -18,7 +18,7 @@ export const getSpaceContext = cache(async (): Promise<SpaceContext> => {
     const role = memberships?.find(member => member.space_id === space.id)?.role;
     return role ? [{ ...space, role } as AccessibleSpace] : [];
   });
-  const preferred = cookies().get(SPACE_COOKIE)?.value;
+  const preferred = (await cookies()).get(SPACE_COOKIE)?.value;
   const active = available.find(space => space.id === preferred) ?? available.find(space => space.kind === 'personal' && space.owner_id === user.id);
   if (!active) throw new Error('Personal space unavailable. Contact an administrator.');
   return { active, spaces: available, platformAdmin: !!admin };
