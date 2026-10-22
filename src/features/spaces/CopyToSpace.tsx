@@ -45,14 +45,14 @@ export function CopyToSpace({ kind, id, ids }: { kind: CopyKind; id?: string; id
       }}>{t('Copy independently')}</Button>}
     </>}>
       <p className="text-sm text-sn-text-muted mb-3">{t('The source stays unchanged. Copies and files are independent, without automatic synchronisation.')}</p>
-      <p className="text-sm text-sn-text-muted mb-4">{t('Parents are included automatically. Names are matched ignoring case and extra spaces: client in the destination, story under that client, development under that story. Existing content is never overwritten.')}</p>
+      <p className="text-sm text-sn-text-muted mb-4">{t('Parents are included automatically. Clients and stories are matched by name. Imported developments are matched by their archived content; distinct objects and versions are preserved. Existing content is never overwritten.')}</p>
       <Select label={t('Destination space')} disabled={busy||!!result} value={target} onChange={event=>setTarget(event.target.value)} options={[{value:'',label:t('Select a destination')},...targets.map(space=>({value:space.id,label:space.kind==='personal'?t('Personal workspace'):space.name}))]}/>
       {loading&&<p role="status" className="flex gap-2 mt-4 text-sm text-sn-text-muted"><Loader2 size={16} className="animate-spin"/>{t('Preparing preview…')}</p>}
       {preview&&<div className="my-4 rounded-lg bg-sn-table-header p-4 text-sm space-y-2">
         <p className="font-semibold">{t('New records to create')}</p>
         <p>{preview.clients} {t('Clients')} · {preview.stories} {t('Stories')} · {preview.developments} {t('Developments')} · {preview.attachments} {t('Attachments')}</p>
         <p className="text-xs text-sn-text-muted">{t('Existing or shared parents reused')}: {preview.reused_clients ?? 0} {t('Clients')} · {preview.reused_stories ?? 0} {t('Stories')} · {preview.reused_developments ?? 0} {t('Developments')}</p>
-        <p className="text-xs text-sn-text-muted">{t('Same-name developments are kept as they are, including their existing attachments. Only missing developments and their files are copied.')}</p>
+        <p className="text-xs text-sn-text-muted">{t('Matching developments and their existing attachments are kept unchanged. Only missing developments and their files are copied.')}</p>
       </div>}
       {busy&&<p className="text-xs text-sn-text-muted mt-4" role="status">{t('Copying content and files. Keep this window open.')}</p>}
       {error&&<p role="alert" className="text-sm text-sn-danger mt-4 break-words">{errorText}<span className="block mt-2">{t('An interrupted file copy can be resumed from Spaces. The destination stays hidden until completion.')}</span></p>}

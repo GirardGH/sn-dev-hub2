@@ -6,7 +6,7 @@ await db.exec(fs.readFileSync('supabase/schema.sql','utf8').replace('CREATE EXTE
 await db.exec(`INSERT INTO public.development_attachments(id,development_id,user_id,file_name,size_bytes) VALUES('40000000-0000-4000-8000-000000000001','30000000-0000-4000-8000-000000000001','${owner}','source.txt',13);INSERT INTO storage.objects(bucket_id,name,metadata) SELECT 'development-attachments',storage_path,'{"size":13}' FROM public.development_attachments;UPDATE public.development_attachments SET status='ready';`);
 const fingerprintSQL = table => `SELECT md5(jsonb_agg(to_jsonb(t)-'space_id'-'copy_job_id' ORDER BY id)::text) AS fingerprint FROM public.${table} t`;
 const originalTables=['clients','stories','developments','xml_imports','development_attachments'];const originalPrints={};for(const table of originalTables)originalPrints[table]=(await db.query(fingerprintSQL(table))).rows[0].fingerprint;
-for(const file of ['20261020_spaces.sql','20261020_space_copies.sql','20261020_bulk_space_copies.sql'])await db.exec(fs.readFileSync('supabase/migrations/'+file,'utf8'));
+for(const file of ['20261020_spaces.sql','20261020_space_copies.sql','20261020_bulk_space_copies.sql','20261022_archive_copy_identity.sql'])await db.exec(fs.readFileSync('supabase/migrations/'+file,'utf8'));
 for(const table of originalTables)assert.equal((await db.query(fingerprintSQL(table))).rows[0].fingerprint,originalPrints[table],`Existing data/timestamps changed in ${table}`);
 async function as(uid){await db.exec(`RESET ROLE;SET request.jwt.claim.sub='${uid}';SET ROLE authenticated;`)}
 async function query(sql){return (await db.query(sql)).rows}async function scalar(sql){return Object.values((await query(sql))[0])[0]}async function rejects(sql){await assert.rejects(()=>db.exec(sql));}
@@ -89,5 +89,31 @@ await rejects(`SELECT public.preview_space_copy_batch('development',ARRAY['${sou
 await as(outsider);await rejects(`SELECT public.begin_space_copy_batch('development',ARRAY['${sourceDev}']::uuid[],'${newTarget}')`);
 await as(reader);await rejects(`SELECT public.preview_space_copy_batch('development',ARRAY['${sourceDev}','${d3}']::uuid[],'${target}')`);
 await rejects(`SELECT public.start_space_copy_batch('development',ARRAY['${d3}']::uuid[],'${target}')`);
+await as(owner);
+// Archive repair: same titles across tables, sys_ids and versions must survive.
+const archiveTarget=await scalar("SELECT public.create_company_space('Archive identity regression')");
+const archiveIds=[];
+for(const [type,sysid,value] of [['sys_decision_input','a'.repeat(32),'reason'],['sys_decision_input','b'.repeat(32),'country'],['sys_metadata_link','a'.repeat(32),'reason'],['sys_decision_input','a'.repeat(32),'reason updated']]) {
+ archiveIds.push(await scalar(`INSERT INTO public.developments(user_id,space_id,client_id,story_id,title,development_type,config,raw_xml) VALUES('${owner}','${personal}','${sourceClient}','${sourceStory}','Identical label','${type}','${JSON.stringify({sys_id:sysid,element:value})}','<record>${value}</record>') RETURNING id`));
+}
+// Simulate the previous faulty copy: one target record and links from all source objects.
+const archiveFirst=await scalar(`SELECT public.begin_space_copy_batch('development',ARRAY['${archiveIds[0]}']::uuid[],'${archiveTarget}')`);
+await db.exec(`SELECT public.finish_space_copy('${archiveFirst}')`);
+const originalArchiveTarget=await scalar(`SELECT target_id FROM public.space_copy_links WHERE entity='development' AND source_id='${archiveIds[0]}' AND target_space_id='${archiveTarget}'`);
+await db.exec(`RESET ROLE`);
+for(const id of archiveIds.slice(1)) await db.exec(`INSERT INTO public.space_copy_links VALUES('development','${id}','${archiveTarget}','${originalArchiveTarget}','${archiveFirst}')`);
+await as(owner);
+const repairPreview=await scalar(`SELECT public.preview_space_copy_batch('development',ARRAY[${archiveIds.map(id=>"'"+id+"'").join(',')}]::uuid[],'${archiveTarget}')`);
+assert.equal(repairPreview.developments,3);assert.equal(repairPreview.reused_developments,1);
+const repairJob=await scalar(`SELECT public.begin_space_copy_batch('development',ARRAY[${archiveIds.map(id=>"'"+id+"'").join(',')}]::uuid[],'${archiveTarget}')`);
+await db.exec(`SELECT public.finish_space_copy('${repairJob}')`);
+assert.equal(await scalar(`SELECT count(*)::int FROM public.developments WHERE space_id='${archiveTarget}'`),4);
+assert.equal(await scalar(`SELECT config->>'element' FROM public.developments WHERE id='${originalArchiveTarget}'`),'reason');
+const repeatRepair=await scalar(`SELECT public.preview_space_copy_batch('development',ARRAY[${archiveIds.map(id=>"'"+id+"'").join(',')}]::uuid[],'${archiveTarget}')`);
+assert.equal(repeatRepair.developments,0);
+// Identical archive from another source ID is still reused.
+const identicalArchive=await scalar(`INSERT INTO public.developments(user_id,space_id,client_id,story_id,title,development_type,config,raw_xml) SELECT user_id,space_id,client_id,story_id,title,development_type,config,raw_xml FROM public.developments WHERE id='${archiveIds[0]}' RETURNING id`);
+assert.equal((await scalar(`SELECT public.preview_space_copy_batch('development',ARRAY['${identicalArchive}']::uuid[],'${archiveTarget}')`)).developments,0);
+
 console.log('Bulk copy integration passed: cross-user name reuse, cascading parents, missing descendants, staged files, repeat/resume, parent-scoped names, ambiguity rollback, batch collapse and denied access.');
 await db.close();})().catch(e=>{console.error(e);process.exitCode=1});
