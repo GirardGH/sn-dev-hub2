@@ -1,4 +1,5 @@
 "use client";
+import { BrandIcon } from "@/components/brand/BrandIcon";
 import { GoogleSignIn, AuthCallbackFeedback } from "@/features/auth/GoogleSignIn";
 import { useT } from "@/i18n/LanguageProvider";
 
@@ -9,7 +10,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Layers, LogIn, Mail, ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { LogIn, Mail, ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
@@ -225,9 +226,7 @@ export default function LoginPage() {
       <div className="relative z-10 w-full max-w-[420px]">
         <div className="mb-5 flex flex-col items-center text-center">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#91cf62] text-[#163c3f] shadow-xs">
-              <Layers className="h-6 w-6" aria-hidden="true" />
-            </span>
+            <BrandIcon className="h-11 w-11 shrink-0 shadow-xs" />
             <h1 className="text-[30px] font-semibold tracking-tight text-white">SN Dev <span className="text-[#b9e49a]">Hub</span></h1>
           </div>
           <p className="mt-3 text-sm text-white/80">{t("Your ServiceNow development library")}</p>

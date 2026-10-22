@@ -1,4 +1,5 @@
 "use client";
+import { BrandIcon } from "@/components/brand/BrandIcon";
 import { useT } from "@/i18n/LanguageProvider";
 
 import { useState } from "react";
@@ -7,7 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Layers, KeyRound, CheckCircle2 } from "lucide-react";
+import { KeyRound, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 
@@ -57,9 +58,7 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen bg-sn-bg flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="flex items-center justify-center gap-2 mb-8">
-          <div className="w-10 h-10 bg-sn-accent rounded-lg flex items-center justify-center">
-            <Layers className="w-6 h-6 text-white" />
-          </div>
+          <BrandIcon className="h-10 w-10 shrink-0" />
           <div>
             <h1 className="text-xl font-bold text-sn-text">{t("SN Dev Hub")}</h1>
             <p className="text-xs text-sn-text-muted">{t("ServiceNow Manager")}</p>

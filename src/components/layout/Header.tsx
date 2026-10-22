@@ -3,8 +3,9 @@ import { useT } from "@/i18n/LanguageProvider";
 import { useSpace } from "@/features/spaces/SpaceProvider";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, Layers, Settings2, ChevronDown } from "lucide-react";
+import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, Settings2, ChevronDown } from "lucide-react";
 import * as Dropdown from "@radix-ui/react-dropdown-menu";
+import { BrandIcon } from "@/components/brand/BrandIcon";
 import { GlobalSearch } from "@/components/search/GlobalSearch";
 
 function initials(email?: string) {
@@ -32,7 +33,7 @@ export function Header({ userEmail, collapsed, onToggleSidebar, mobileOpen, onOp
   }
   return <header className="fixed inset-x-0 top-0 z-40 h-16 bg-sn-header text-white border-b border-white/10 flex items-center gap-3 px-4 lg:px-5">
     <Link href="/dashboard" aria-label={t("SN Dev Hub — accueil")} className="flex items-center gap-2.5 shrink-0 lg:w-[200px]">
-      <span className="flex items-center justify-center w-9 h-9 rounded-xl bg-[#8bd05b] text-[#102c3e]"><Layers className="w-[21px] h-[21px]" strokeWidth={1.8} /></span>
+      <BrandIcon className="h-9 w-9 shrink-0" />
       <span className="hidden sm:block text-[17px] font-semibold tracking-tight">{t("SN Dev")} <span className="text-[#a3db7b]">{t("Hub")}</span></span>
     </Link>
     <button type="button" onClick={onToggleSidebar} aria-label={collapsed ? t("Déployer la navigation") : t("Réduire la navigation")} aria-expanded={!collapsed} className="hidden lg:flex workspace-header-icon">{collapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}</button>
